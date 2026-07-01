@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
-  Card, CardContent, CardHeader, CardTitle,
-} from "@/components/ui/card";
-import {
-  Table, TableBody, TableCell, TableHead,
-  TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,24 +17,46 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog, DialogContent, DialogHeader,
-  DialogTitle, DialogFooter,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import {
-  Select, SelectContent, SelectItem,
-  SelectTrigger, SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@/components/ui/select";
 import {
-  Pagination, PaginationContent, PaginationItem,
-  PaginationLink, PaginationNext, PaginationPrevious,
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
 } from "@/components/ui/pagination";
 import { toast } from "sonner";
 import {
-  Plus, Search, Pencil, Trash2, Loader2, ShoppingCart,
-  Wand2, Download, FileText, Upload, X, Users,
+  Plus,
+  Search,
+  Pencil,
+  Trash2,
+  Loader2,
+  ShoppingCart,
+  Wand2,
+  Download,
+  FileText,
+  Upload,
+  X,
+  Users,
 } from "lucide-react";
 import {
-  createTransaction, updateTransaction, deleteTransaction,
+  createTransaction,
+  updateTransaction,
+  deleteTransaction,
 } from "@/actions/transaksi-actions";
 import { saveTransactionDetails } from "@/actions/detail-actions";
 
@@ -41,10 +65,12 @@ const statusBadge = (status: string) => {
   const colors: Record<string, string> = {
     Processed: "bg-blue-500/10 text-blue-400 border-blue-500/20",
     Completed: "bg-green-500/10 text-green-400 border-green-500/20",
-    Failed:    "bg-red-500/10 text-red-400 border-red-500/20",
+    Failed: "bg-red-500/10 text-red-400 border-red-500/20",
   };
   const labels: Record<string, string> = {
-    Processed: "Diproses", Completed: "Selesai", Failed: "Gagal",
+    Processed: "Diproses",
+    Completed: "Selesai",
+    Failed: "Gagal",
   };
   return (
     <Badge variant="outline" className={colors[status] || ""}>
@@ -54,12 +80,29 @@ const statusBadge = (status: string) => {
 };
 
 const formatDate = (d: string) =>
-  new Date(d).toLocaleDateString("id-ID", { year: "numeric", month: "short", day: "numeric" });
+  new Date(d).toLocaleDateString("id-ID", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-interface Roll { id: string; rollName: string }
-interface Font { id: string; name: string; fontFamily: string | null; filePath: string | null }
-interface Background { id: string; name: string; fontColor: string; imagePath: string | null }
+interface Roll {
+  id: string;
+  rollName: string;
+}
+interface Font {
+  id: string;
+  name: string;
+  fontFamily: string | null;
+  filePath: string | null;
+}
+interface Background {
+  id: string;
+  name: string;
+  fontColor: string;
+  imagePath: string | null;
+}
 interface DetailRow {
   name: string;
   fontId: string;
@@ -68,13 +111,19 @@ interface DetailRow {
 }
 
 interface Transaction {
-  id: string; rollId: string; quantity: number | null;
+  id: string;
+  rollId: string;
+  quantity: number | null;
   numberOfDetails: number | null;
-  printWidth: string | null; printHeight: string | null;
-  labelHeight: string | null; labelSizePresetId: string | null;
+  printWidth: string | null;
+  printHeight: string | null;
+  labelHeight: string | null;
+  labelSizePresetId: string | null;
   resiNumber: string | null;
-  path: string | null; status: string;
-  transactionDate: string; createdAt: string;
+  path: string | null;
+  status: string;
+  transactionDate: string;
+  createdAt: string;
   roll: Roll;
   details?: DetailRow[];
 }
@@ -96,7 +145,12 @@ interface Props {
 
 // ─── Detail Row Component ─────────────────────────────────────────────────────
 function DetailRowInput({
-  idx, row, fonts, backgrounds, onChange, onRemove,
+  idx,
+  row,
+  fonts,
+  backgrounds,
+  onChange,
+  onRemove,
 }: {
   idx: number;
   row: DetailRow;
@@ -107,30 +161,42 @@ function DetailRowInput({
 }) {
   return (
     <div className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 p-3">
-      <span className="w-6 text-center text-xs font-bold text-slate-500">{idx + 1}</span>
+      <span className="w-6 text-center text-xs font-bold text-slate-500">
+        {idx + 1}
+      </span>
       <Input
         placeholder="Nama label"
         value={row.name}
         onChange={(e) => onChange(idx, "name", e.target.value)}
         className="flex-1 border-slate-700 bg-slate-800 text-white text-sm h-8 placeholder:text-slate-500"
       />
-      <Select value={row.fontId} onValueChange={(v) => onChange(idx, "fontId", v ?? "")}>
+      <Select
+        value={row.fontId}
+        onValueChange={(v) => onChange(idx, "fontId", v ?? "")}
+      >
         <SelectTrigger className="w-36 border-slate-700 bg-slate-800 text-white h-8 text-xs">
           <SelectValue placeholder="Font..." />
         </SelectTrigger>
         <SelectContent className="border-slate-700 bg-slate-900 text-white max-h-48">
           {fonts.map((f) => (
-            <SelectItem key={f.id} value={f.id} className="text-xs">{f.name}</SelectItem>
+            <SelectItem key={f.id} value={f.id} className="text-xs">
+              {f.name}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>
-      <Select value={row.backgroundId} onValueChange={(v) => onChange(idx, "backgroundId", v ?? "")}>
+      <Select
+        value={row.backgroundId}
+        onValueChange={(v) => onChange(idx, "backgroundId", v ?? "")}
+      >
         <SelectTrigger className="w-36 border-slate-700 bg-slate-800 text-white h-8 text-xs">
           <SelectValue placeholder="Background..." />
         </SelectTrigger>
         <SelectContent className="border-slate-700 bg-slate-900 text-white max-h-48">
           {backgrounds.map((b) => (
-            <SelectItem key={b.id} value={b.id} className="text-xs">{b.name}</SelectItem>
+            <SelectItem key={b.id} value={b.id} className="text-xs">
+              {b.name}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -139,11 +205,18 @@ function DetailRowInput({
         min={1}
         max={200}
         value={row.quantity}
-        onChange={(e) => onChange(idx, "quantity", parseInt(e.target.value) || 1)}
+        onChange={(e) =>
+          onChange(idx, "quantity", parseInt(e.target.value) || 1)
+        }
         className="w-16 border-slate-700 bg-slate-800 text-white text-sm h-8 text-center"
         title="Jumlah baris label untuk nama ini"
       />
-      <Button variant="ghost" size="icon-xs" onClick={() => onRemove(idx)} className="text-red-400 hover:text-red-300 hover:bg-red-900/20 flex-shrink-0">
+      <Button
+        variant="ghost"
+        size="icon-xs"
+        onClick={() => onRemove(idx)}
+        className="text-red-400 hover:text-red-300 hover:bg-red-900/20 flex-shrink-0"
+      >
         <X className="h-3.5 w-3.5" />
       </Button>
     </div>
@@ -152,10 +225,17 @@ function DetailRowInput({
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 export function TransaksiClient({
-  transactions, rolls, fonts, backgrounds,
-  currentPage, totalPages, totalCount,
-  selectedRollId: initialRollId, statusFilter: initialStatus,
-  startDate: initialStartDate, endDate: initialEndDate,
+  transactions,
+  rolls,
+  fonts,
+  backgrounds,
+  currentPage,
+  totalPages,
+  totalCount,
+  selectedRollId: initialRollId,
+  statusFilter: initialStatus,
+  startDate: initialStartDate,
+  endDate: initialEndDate,
   userRole,
 }: Props) {
   const router = useRouter();
@@ -179,12 +259,17 @@ export function TransaksiClient({
 
   // Generate result
   const [generateResult, setGenerateResult] = useState<{
-    outputPath: string; totalLabels: number; totalPages: number;
+    outputPath: string;
+    totalLabels: number;
+    totalPages: number;
+    base64: string;
   } | null>(null);
 
   // Create form
   const [createRollId, setCreateRollId] = useState("");
-  const [createDate, setCreateDate] = useState(new Date().toISOString().split("T")[0]);
+  const [createDate, setCreateDate] = useState(
+    new Date().toISOString().split("T")[0],
+  );
   const [createQty, setCreateQty] = useState("1");
   const [createResi, setCreateResi] = useState("");
   const [createDetails, setCreateDetails] = useState<DetailRow[]>([]);
@@ -206,7 +291,9 @@ export function TransaksiClient({
   const [batchExcelFileName, setBatchExcelFileName] = useState("");
   const [batchExcelLoading, setBatchExcelLoading] = useState(false);
 
-  const handleExcelFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleExcelFileChange = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+  ) => {
     const file = e.target.files?.[0];
     if (!file) return;
     setBatchExcelFileName(file.name);
@@ -214,7 +301,10 @@ export function TransaksiClient({
     try {
       const formData = new FormData();
       formData.append("file", file);
-      const res = await fetch("/api/parse-excel", { method: "POST", body: formData });
+      const res = await fetch("/api/parse-excel", {
+        method: "POST",
+        body: formData,
+      });
       const data = await res.json();
       if (!res.ok || data.error) {
         toast.error(data.error || "Gagal membaca file");
@@ -234,7 +324,12 @@ export function TransaksiClient({
   // ─── Helpers ────────────────────────────────────────────────────────────────
 
   const addDetailRow = (target: "create" | "edit") => {
-    const emptyRow: DetailRow = { name: "", fontId: fonts[0]?.id ?? "", backgroundId: backgrounds[0]?.id ?? "", quantity: 1 };
+    const emptyRow: DetailRow = {
+      name: "",
+      fontId: fonts[0]?.id ?? "",
+      backgroundId: backgrounds[0]?.id ?? "",
+      quantity: 1,
+    };
     if (target === "create") setCreateDetails((prev) => [...prev, emptyRow]);
     else setEditDetails((prev) => [...prev, emptyRow]);
   };
@@ -243,10 +338,12 @@ export function TransaksiClient({
     target: "create" | "edit",
     idx: number,
     field: keyof DetailRow,
-    val: string | number
+    val: string | number,
   ) => {
     const setter = target === "create" ? setCreateDetails : setEditDetails;
-    setter((prev) => prev.map((r, i) => (i === idx ? { ...r, [field]: val } : r)));
+    setter((prev) =>
+      prev.map((r, i) => (i === idx ? { ...r, [field]: val } : r)),
+    );
   };
 
   const removeDetailRow = (target: "create" | "edit", idx: number) => {
@@ -275,22 +372,28 @@ export function TransaksiClient({
   };
 
   const resetCreateForm = () => {
-    setCreateRollId(""); setCreateDate(new Date().toISOString().split("T")[0]);
-    setCreateQty("1"); setCreateResi(""); setCreateDetails([]);
+    setCreateRollId("");
+    setCreateDate(new Date().toISOString().split("T")[0]);
+    setCreateQty("1");
+    setCreateResi("");
+    setCreateDetails([]);
   };
 
   // ─── CRUD Handlers ────────────────────────────────────────────────────────
 
   const handleCreate = async () => {
     if (!createRollId || !createDate) {
-      toast.error("Harap isi roll dan tanggal transaksi"); return;
+      toast.error("Harap isi roll dan tanggal transaksi");
+      return;
     }
     if (createDetails.length === 0) {
-      toast.error("Tambahkan minimal 1 baris detail nama"); return;
+      toast.error("Tambahkan minimal 1 baris detail nama");
+      return;
     }
     const invalidDetail = createDetails.find((d) => !d.name.trim());
     if (invalidDetail) {
-      toast.error("Semua baris detail harus diisi nama"); return;
+      toast.error("Semua baris detail harus diisi nama");
+      return;
     }
 
     setFormLoading(true);
@@ -304,20 +407,25 @@ export function TransaksiClient({
       });
 
       if (result.error || !result.id) {
-        toast.error(result.error ?? "Gagal membuat transaksi"); return;
+        toast.error(result.error ?? "Gagal membuat transaksi");
+        return;
       }
 
       // Save details
-      const detailResult = await saveTransactionDetails(result.id, createDetails.map((d, i) => ({
-        name: d.name.trim(),
-        fontId: d.fontId || null,
-        backgroundId: d.backgroundId || null,
-        quantity: d.quantity,
-        sortOrder: i,
-      })));
+      const detailResult = await saveTransactionDetails(
+        result.id,
+        createDetails.map((d, i) => ({
+          name: d.name.trim(),
+          fontId: d.fontId || null,
+          backgroundId: d.backgroundId || null,
+          quantity: d.quantity,
+          sortOrder: i,
+        })),
+      );
 
       if (detailResult.error) {
-        toast.error(detailResult.error); return;
+        toast.error(detailResult.error);
+        return;
       }
 
       toast.success("Transaksi berhasil dibuat!");
@@ -355,14 +463,26 @@ export function TransaksiClient({
         status: editStatus as "Processed" | "Failed" | "Completed",
       });
 
-      if (result.error) { toast.error(result.error); return; }
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
 
       if (editDetails.length > 0) {
-        const detailResult = await saveTransactionDetails(selectedTx.id, editDetails.map((d, i) => ({
-          name: d.name.trim(), fontId: d.fontId || null,
-          backgroundId: d.backgroundId || null, quantity: d.quantity, sortOrder: i,
-        })));
-        if (detailResult.error) { toast.error(detailResult.error); return; }
+        const detailResult = await saveTransactionDetails(
+          selectedTx.id,
+          editDetails.map((d, i) => ({
+            name: d.name.trim(),
+            fontId: d.fontId || null,
+            backgroundId: d.backgroundId || null,
+            quantity: d.quantity,
+            sortOrder: i,
+          })),
+        );
+        if (detailResult.error) {
+          toast.error(detailResult.error);
+          return;
+        }
       }
 
       toast.success("Transaksi berhasil diupdate");
@@ -375,14 +495,20 @@ export function TransaksiClient({
     }
   };
 
-  const openDeleteDialog = (tx: Transaction) => { setSelectedTx(tx); setDeleteDialogOpen(true); };
+  const openDeleteDialog = (tx: Transaction) => {
+    setSelectedTx(tx);
+    setDeleteDialogOpen(true);
+  };
 
   const handleDelete = async () => {
     if (!selectedTx) return;
     setFormLoading(true);
     try {
       const result = await deleteTransaction(selectedTx.id);
-      if (result.error) { toast.error(result.error); return; }
+      if (result.error) {
+        toast.error(result.error);
+        return;
+      }
       toast.success("Transaksi berhasil dihapus");
       setDeleteDialogOpen(false);
       router.refresh();
@@ -412,10 +538,13 @@ export function TransaksiClient({
       });
       const data = await res.json();
       if (!res.ok || data.error) {
-        toast.error(data.error || "Gagal generate label"); return;
+        toast.error(data.error || "Gagal generate label");
+        return;
       }
       setGenerateResult(data);
-      toast.success(`Label berhasil di-generate! ${data.totalLabels} label, ${data.totalPages} halaman`);
+      toast.success(
+        `Label berhasil di-generate! ${data.totalLabels} label, ${data.totalPages} halaman`,
+      );
       router.refresh();
     } catch {
       toast.error("Terjadi kesalahan saat generate");
@@ -427,10 +556,17 @@ export function TransaksiClient({
   // ─── Batch Import ─────────────────────────────────────────────────────────
 
   const applyBatchImport = (target: "create" | "edit") => {
-    const names = batchNamesText.split("\n").map((n) => n.trim()).filter((n) => n.length > 0);
-    if (names.length === 0) { toast.error("Tidak ada nama yang valid"); return; }
+    const names = batchNamesText
+      .split("\n")
+      .map((n) => n.trim())
+      .filter((n) => n.length > 0);
+    if (names.length === 0) {
+      toast.error("Tidak ada nama yang valid");
+      return;
+    }
     const rows: DetailRow[] = names.map((name) => ({
-      name, fontId: batchFontId || (fonts[0]?.id ?? ""),
+      name,
+      fontId: batchFontId || (fonts[0]?.id ?? ""),
       backgroundId: batchBackgroundId || (backgrounds[0]?.id ?? ""),
       quantity: parseInt(batchQuantity) || 1,
     }));
@@ -451,7 +587,12 @@ export function TransaksiClient({
           <h1 className="text-3xl font-bold text-white">Transaksi</h1>
           <p className="mt-1 text-slate-400">Kelola dan generate label nama</p>
         </div>
-        <Button onClick={() => { resetCreateForm(); setCreateDialogOpen(true); }}>
+        <Button
+          onClick={() => {
+            resetCreateForm();
+            setCreateDialogOpen(true);
+          }}
+        >
           <Plus className="mr-2 h-4 w-4" /> Tambah Transaksi
         </Button>
       </div>
@@ -462,19 +603,35 @@ export function TransaksiClient({
           <div className="flex flex-wrap gap-3">
             <div className="flex-1 min-w-40">
               <Label className="text-xs text-slate-400 mb-1 block">Roll</Label>
-              <Select value={filterRollId || "ALL"} onValueChange={(v) => setFilterRollId(v == null || v === "ALL" ? "" : v)}>
+              <Select
+                value={filterRollId || "ALL"}
+                onValueChange={(v) =>
+                  setFilterRollId(v == null || v === "ALL" ? "" : v)
+                }
+              >
                 <SelectTrigger className="border-slate-700 bg-slate-800 text-white h-8 text-sm">
                   <SelectValue placeholder="Semua Roll" />
                 </SelectTrigger>
                 <SelectContent className="border-slate-700 bg-slate-900 text-white">
                   <SelectItem value="ALL">Semua Roll</SelectItem>
-                  {rolls.map((r) => <SelectItem key={r.id} value={r.id}>{r.rollName}</SelectItem>)}
+                  {rolls.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.rollName}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="w-36">
-              <Label className="text-xs text-slate-400 mb-1 block">Status</Label>
-              <Select value={filterStatus || "ALL"} onValueChange={(v) => setFilterStatus(v == null || v === "ALL" ? "" : v)}>
+              <Label className="text-xs text-slate-400 mb-1 block">
+                Status
+              </Label>
+              <Select
+                value={filterStatus || "ALL"}
+                onValueChange={(v) =>
+                  setFilterStatus(v == null || v === "ALL" ? "" : v)
+                }
+              >
                 <SelectTrigger className="border-slate-700 bg-slate-800 text-white h-8 text-sm">
                   <SelectValue placeholder="Semua Status" />
                 </SelectTrigger>
@@ -487,18 +644,42 @@ export function TransaksiClient({
               </Select>
             </div>
             <div className="w-36">
-              <Label className="text-xs text-slate-400 mb-1 block">Dari Tanggal</Label>
-              <Input type="date" value={filterStartDate} onChange={(e) => setFilterStartDate(e.target.value)} className="border-slate-700 bg-slate-800 text-white h-8 text-sm" />
+              <Label className="text-xs text-slate-400 mb-1 block">
+                Dari Tanggal
+              </Label>
+              <Input
+                type="date"
+                value={filterStartDate}
+                onChange={(e) => setFilterStartDate(e.target.value)}
+                className="border-slate-700 bg-slate-800 text-white h-8 text-sm"
+              />
             </div>
             <div className="w-36">
-              <Label className="text-xs text-slate-400 mb-1 block">Sampai Tanggal</Label>
-              <Input type="date" value={filterEndDate} onChange={(e) => setFilterEndDate(e.target.value)} className="border-slate-700 bg-slate-800 text-white h-8 text-sm" />
+              <Label className="text-xs text-slate-400 mb-1 block">
+                Sampai Tanggal
+              </Label>
+              <Input
+                type="date"
+                value={filterEndDate}
+                onChange={(e) => setFilterEndDate(e.target.value)}
+                className="border-slate-700 bg-slate-800 text-white h-8 text-sm"
+              />
             </div>
             <div className="flex items-end gap-2">
               <Button onClick={applyFilters} className="h-8 px-4 text-sm">
                 <Search className="mr-1.5 h-3.5 w-3.5" /> Cari
               </Button>
-              <Button variant="outline" onClick={() => { setFilterRollId(""); setFilterStatus(""); setFilterStartDate(""); setFilterEndDate(""); router.push("/transaksi"); }} className="h-8 px-3 text-sm border-slate-700 text-slate-300 hover:bg-slate-800">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setFilterRollId("");
+                  setFilterStatus("");
+                  setFilterStartDate("");
+                  setFilterEndDate("");
+                  router.push("/transaksi");
+                }}
+                className="h-8 px-3 text-sm border-slate-700 text-slate-300 hover:bg-slate-800"
+              >
                 Reset
               </Button>
             </div>
@@ -525,30 +706,55 @@ export function TransaksiClient({
                 <TableRow className="border-slate-800 hover:bg-transparent">
                   <TableHead className="text-slate-400">Tanggal</TableHead>
                   <TableHead className="text-slate-400">Roll</TableHead>
-                  <TableHead className="text-slate-400 text-center">Qty</TableHead>
-                  <TableHead className="text-slate-400 text-center">Detail</TableHead>
+                  <TableHead className="text-slate-400 text-center">
+                    Qty
+                  </TableHead>
+                  <TableHead className="text-slate-400 text-center">
+                    Detail
+                  </TableHead>
                   <TableHead className="text-slate-400">Status</TableHead>
                   <TableHead className="text-slate-400">Output</TableHead>
-                  <TableHead className="text-slate-400 text-right">Aksi</TableHead>
+                  <TableHead className="text-slate-400 text-right">
+                    Aksi
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {transactions.map((tx) => (
-                  <TableRow key={tx.id} className="border-slate-800 hover:bg-slate-800/30">
-                    <TableCell className="text-slate-300 whitespace-nowrap">{formatDate(tx.transactionDate)}</TableCell>
-                    <TableCell className="text-white font-medium">{tx.roll.rollName}</TableCell>
-                    <TableCell className="text-slate-300 text-center">{tx.quantity ?? 1}</TableCell>
+                  <TableRow
+                    key={tx.id}
+                    className="border-slate-800 hover:bg-slate-800/30"
+                  >
+                    <TableCell className="text-slate-300 whitespace-nowrap">
+                      {formatDate(tx.transactionDate)}
+                    </TableCell>
+                    <TableCell className="text-white font-medium">
+                      {tx.roll.rollName}
+                    </TableCell>
+                    <TableCell className="text-slate-300 text-center">
+                      {tx.quantity ?? 1}
+                    </TableCell>
                     <TableCell className="text-center">
                       {tx.numberOfDetails ? (
-                        <Badge variant="outline" className="text-xs text-slate-400 border-slate-700">
-                          <Users className="mr-1 h-3 w-3" />{tx.numberOfDetails}
+                        <Badge
+                          variant="outline"
+                          className="text-xs text-slate-400 border-slate-700"
+                        >
+                          <Users className="mr-1 h-3 w-3" />
+                          {tx.numberOfDetails}
                         </Badge>
-                      ) : <span className="text-slate-600 text-xs">—</span>}
+                      ) : (
+                        <span className="text-slate-600 text-xs">—</span>
+                      )}
                     </TableCell>
                     <TableCell>{statusBadge(tx.status)}</TableCell>
                     <TableCell>
                       {tx.path ? (
-                        <a href={tx.path} target="_blank" rel="noopener noreferrer">
+                        <a
+                          href={tx.path}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           <Badge className="bg-green-500/10 text-green-400 border-green-500/20 text-xs cursor-pointer hover:bg-green-500/20">
                             <Download className="mr-1 h-3 w-3" /> Unduh
                           </Badge>
@@ -559,17 +765,30 @@ export function TransaksiClient({
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon-xs" onClick={() => openGenerateDialog(tx)}
-                          className="text-purple-400 hover:text-purple-300 hover:bg-purple-900/20" title="Generate Label">
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => openGenerateDialog(tx)}
+                          className="text-purple-400 hover:text-purple-300 hover:bg-purple-900/20"
+                          title="Generate Label"
+                        >
                           <Wand2 className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon-xs" onClick={() => openEditDialog(tx)}
-                          className="text-slate-400 hover:text-white hover:bg-slate-800">
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => openEditDialog(tx)}
+                          className="text-slate-400 hover:text-white hover:bg-slate-800"
+                        >
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
                         {userRole === "admin" && (
-                          <Button variant="ghost" size="icon-xs" onClick={() => openDeleteDialog(tx)}
-                            className="text-red-400 hover:text-red-300 hover:bg-red-900/20">
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={() => openDeleteDialog(tx)}
+                            className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                          >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
                         )}
@@ -588,49 +807,103 @@ export function TransaksiClient({
         <Pagination>
           <PaginationContent>
             <PaginationItem>
-              <PaginationPrevious href="#" onClick={(e) => { e.preventDefault(); if (currentPage > 1) handlePageChange(currentPage - 1); }} />
+              <PaginationPrevious
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (currentPage > 1) handlePageChange(currentPage - 1);
+                }}
+              />
             </PaginationItem>
-            {Array.from({ length: Math.min(5, totalPages) }, (_, i) => i + 1).map((p) => (
+            {Array.from(
+              { length: Math.min(5, totalPages) },
+              (_, i) => i + 1,
+            ).map((p) => (
               <PaginationItem key={p}>
-                <PaginationLink href="#" isActive={p === currentPage} onClick={(e) => { e.preventDefault(); handlePageChange(p); }}>{p}</PaginationLink>
+                <PaginationLink
+                  href="#"
+                  isActive={p === currentPage}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handlePageChange(p);
+                  }}
+                >
+                  {p}
+                </PaginationLink>
               </PaginationItem>
             ))}
             <PaginationItem>
-              <PaginationNext href="#" onClick={(e) => { e.preventDefault(); if (currentPage < totalPages) handlePageChange(currentPage + 1); }} />
+              <PaginationNext
+                href="#"
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (currentPage < totalPages)
+                    handlePageChange(currentPage + 1);
+                }}
+              />
             </PaginationItem>
           </PaginationContent>
         </Pagination>
       )}
 
       {/* ─── Create Dialog ──────────────────────────────────────────────────── */}
-      <Dialog open={createDialogOpen} onOpenChange={(o) => { setCreateDialogOpen(o); if (!o) resetCreateForm(); }}>
+      <Dialog
+        open={createDialogOpen}
+        onOpenChange={(o) => {
+          setCreateDialogOpen(o);
+          if (!o) resetCreateForm();
+        }}
+      >
         <DialogContent className="border-slate-800 bg-slate-900 text-white sm:max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-white flex items-center gap-2">
-              <ShoppingCart className="h-5 w-5 text-blue-400" /> Tambah Transaksi Baru
+              <ShoppingCart className="h-5 w-5 text-blue-400" /> Tambah
+              Transaksi Baru
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-5 py-4">
             {/* Row 1: Roll + Date + Qty */}
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
-                <Label className="text-slate-300">Roll <span className="text-red-400">*</span></Label>
-                <Select value={createRollId} onValueChange={(v) => setCreateRollId(v ?? "")}>
+                <Label className="text-slate-300">
+                  Roll <span className="text-red-400">*</span>
+                </Label>
+                <Select
+                  value={createRollId}
+                  onValueChange={(v) => setCreateRollId(v ?? "")}
+                >
                   <SelectTrigger className="border-slate-700 bg-slate-800 text-white">
                     <SelectValue placeholder="Pilih Roll..." />
                   </SelectTrigger>
                   <SelectContent className="border-slate-700 bg-slate-900 text-white">
-                    {rolls.map((r) => <SelectItem key={r.id} value={r.id}>{r.rollName}</SelectItem>)}
+                    {rolls.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.rollName}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-slate-300">Tanggal <span className="text-red-400">*</span></Label>
-                <Input type="date" value={createDate} onChange={(e) => setCreateDate(e.target.value)} className="border-slate-700 bg-slate-800 text-white" />
+                <Label className="text-slate-300">
+                  Tanggal <span className="text-red-400">*</span>
+                </Label>
+                <Input
+                  type="date"
+                  value={createDate}
+                  onChange={(e) => setCreateDate(e.target.value)}
+                  className="border-slate-700 bg-slate-800 text-white"
+                />
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-300">Jumlah Cetakan</Label>
-                <Input type="number" min={1} value={createQty} onChange={(e) => setCreateQty(e.target.value)} className="border-slate-700 bg-slate-800 text-white" />
+                <Input
+                  type="number"
+                  min={1}
+                  value={createQty}
+                  onChange={(e) => setCreateQty(e.target.value)}
+                  className="border-slate-700 bg-slate-800 text-white"
+                />
               </div>
             </div>
 
@@ -645,7 +918,8 @@ export function TransaksiClient({
                 className="border-slate-700 bg-slate-800 text-white"
               />
               <p className="text-xs text-slate-500">
-                📐 Ukuran label fixed: 5cm × 1,4cm | Media: 58cm | 1 paket = 50 pcs | Resi akan jadi barcode di output
+                📐 Ukuran label fixed: 5cm × 1,4cm | Media: 58cm | 1 paket = 50
+                pcs | Resi akan jadi barcode di output
               </p>
             </div>
 
@@ -658,42 +932,86 @@ export function TransaksiClient({
                   <span className="text-red-400 text-xs">*</span>
                 </Label>
                 <div className="flex gap-2">
-                  <Button type="button" variant="outline" size="sm" onClick={() => { setBatchTargetCreate(true); setBatchImportOpen(true); }} className="border-slate-700 text-slate-300 hover:bg-slate-800 h-7 text-xs">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setBatchTargetCreate(true);
+                      setBatchImportOpen(true);
+                    }}
+                    className="border-slate-700 text-slate-300 hover:bg-slate-800 h-7 text-xs"
+                  >
                     <FileText className="mr-1 h-3 w-3" /> Import Nama
                   </Button>
-                  <Button type="button" variant="outline" size="sm" onClick={() => addDetailRow("create")} className="border-slate-700 text-slate-300 hover:bg-slate-800 h-7 text-xs">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addDetailRow("create")}
+                    className="border-slate-700 text-slate-300 hover:bg-slate-800 h-7 text-xs"
+                  >
                     <Plus className="mr-1 h-3 w-3" /> Tambah Baris
                   </Button>
                 </div>
               </div>
               {createDetails.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-slate-700 p-6 text-center">
-                  <p className="text-sm text-slate-500">Belum ada detail nama.</p>
-                  <p className="mt-1 text-xs text-slate-600">Klik &quot;Import Nama&quot; untuk paste banyak nama, atau &quot;Tambah Baris&quot; satu per satu.</p>
+                  <p className="text-sm text-slate-500">
+                    Belum ada detail nama.
+                  </p>
+                  <p className="mt-1 text-xs text-slate-600">
+                    Klik &quot;Import Nama&quot; untuk paste banyak nama, atau
+                    &quot;Tambah Baris&quot; satu per satu.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                   <div className="flex items-center gap-2 px-3 pb-1">
                     <span className="w-6" />
-                    <span className="flex-1 text-xs text-slate-500">Nama Label</span>
+                    <span className="flex-1 text-xs text-slate-500">
+                      Nama Label
+                    </span>
                     <span className="w-36 text-xs text-slate-500">Font</span>
-                    <span className="w-36 text-xs text-slate-500">Background</span>
-                    <span className="w-16 text-xs text-slate-500 text-center">Baris</span>
+                    <span className="w-36 text-xs text-slate-500">
+                      Background
+                    </span>
+                    <span className="w-16 text-xs text-slate-500 text-center">
+                      Baris
+                    </span>
                     <span className="w-6" />
                   </div>
                   {createDetails.map((row, idx) => (
-                    <DetailRowInput key={idx} idx={idx} row={row} fonts={fonts} backgrounds={backgrounds}
+                    <DetailRowInput
+                      key={idx}
+                      idx={idx}
+                      row={row}
+                      fonts={fonts}
+                      backgrounds={backgrounds}
                       onChange={(i, f, v) => updateDetailRow("create", i, f, v)}
-                      onRemove={(i) => removeDetailRow("create", i)} />
+                      onRemove={(i) => removeDetailRow("create", i)}
+                    />
                   ))}
                 </div>
               )}
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateDialogOpen(false)} className="border-slate-700 text-slate-300 hover:bg-slate-800">Batal</Button>
+            <Button
+              variant="outline"
+              onClick={() => setCreateDialogOpen(false)}
+              className="border-slate-700 text-slate-300 hover:bg-slate-800"
+            >
+              Batal
+            </Button>
             <Button onClick={handleCreate} disabled={formLoading}>
-              {formLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menyimpan...</> : "Simpan Transaksi"}
+              {formLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menyimpan...
+                </>
+              ) : (
+                "Simpan Transaksi"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -711,22 +1029,37 @@ export function TransaksiClient({
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label className="text-slate-300">Roll</Label>
-                <Select value={editRollId} onValueChange={(v) => setEditRollId(v ?? "")}>
+                <Select
+                  value={editRollId}
+                  onValueChange={(v) => setEditRollId(v ?? "")}
+                >
                   <SelectTrigger className="border-slate-700 bg-slate-800 text-white">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="border-slate-700 bg-slate-900 text-white">
-                    {rolls.map((r) => <SelectItem key={r.id} value={r.id}>{r.rollName}</SelectItem>)}
+                    {rolls.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.rollName}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-300">Tanggal</Label>
-                <Input type="date" value={editDate} onChange={(e) => setEditDate(e.target.value)} className="border-slate-700 bg-slate-800 text-white" />
+                <Input
+                  type="date"
+                  value={editDate}
+                  onChange={(e) => setEditDate(e.target.value)}
+                  className="border-slate-700 bg-slate-800 text-white"
+                />
               </div>
               <div className="space-y-2">
                 <Label className="text-slate-300">Status</Label>
-                <Select value={editStatus} onValueChange={(v) => setEditStatus(v ?? "Processed")}>
+                <Select
+                  value={editStatus}
+                  onValueChange={(v) => setEditStatus(v ?? "Processed")}
+                >
                   <SelectTrigger className="border-slate-700 bg-slate-800 text-white">
                     <SelectValue />
                   </SelectTrigger>
@@ -749,7 +1082,8 @@ export function TransaksiClient({
                 className="border-slate-700 bg-slate-800 text-white"
               />
               <p className="text-xs text-slate-500">
-                📐 Ukuran label fixed: 5cm × 1,4cm | Media: 58cm | 1 paket = 50 pcs
+                📐 Ukuran label fixed: 5cm × 1,4cm | Media: 58cm | 1 paket = 50
+                pcs
               </p>
             </div>
 
@@ -757,36 +1091,72 @@ export function TransaksiClient({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-slate-300 flex items-center gap-2">
-                  <Users className="h-4 w-4" /> Detail Nama ({editDetails.length})
+                  <Users className="h-4 w-4" /> Detail Nama (
+                  {editDetails.length})
                 </Label>
                 <div className="flex gap-2">
-                  <Button type="button" variant="outline" size="sm" onClick={() => { setBatchTargetCreate(false); setBatchImportOpen(true); }} className="border-slate-700 text-slate-300 hover:bg-slate-800 h-7 text-xs">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setBatchTargetCreate(false);
+                      setBatchImportOpen(true);
+                    }}
+                    className="border-slate-700 text-slate-300 hover:bg-slate-800 h-7 text-xs"
+                  >
                     <FileText className="mr-1 h-3 w-3" /> Import Nama
                   </Button>
-                  <Button type="button" variant="outline" size="sm" onClick={() => addDetailRow("edit")} className="border-slate-700 text-slate-300 hover:bg-slate-800 h-7 text-xs">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => addDetailRow("edit")}
+                    className="border-slate-700 text-slate-300 hover:bg-slate-800 h-7 text-xs"
+                  >
                     <Plus className="mr-1 h-3 w-3" /> Tambah Baris
                   </Button>
                 </div>
               </div>
               {editDetails.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-slate-700 p-4 text-center">
-                  <p className="text-sm text-slate-500">Belum ada detail nama.</p>
+                  <p className="text-sm text-slate-500">
+                    Belum ada detail nama.
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
                   {editDetails.map((row, idx) => (
-                    <DetailRowInput key={idx} idx={idx} row={row} fonts={fonts} backgrounds={backgrounds}
+                    <DetailRowInput
+                      key={idx}
+                      idx={idx}
+                      row={row}
+                      fonts={fonts}
+                      backgrounds={backgrounds}
                       onChange={(i, f, v) => updateDetailRow("edit", i, f, v)}
-                      onRemove={(i) => removeDetailRow("edit", i)} />
+                      onRemove={(i) => removeDetailRow("edit", i)}
+                    />
                   ))}
                 </div>
               )}
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)} className="border-slate-700 text-slate-300 hover:bg-slate-800">Batal</Button>
+            <Button
+              variant="outline"
+              onClick={() => setEditDialogOpen(false)}
+              className="border-slate-700 text-slate-300 hover:bg-slate-800"
+            >
+              Batal
+            </Button>
             <Button onClick={handleEdit} disabled={formLoading}>
-              {formLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menyimpan...</> : "Simpan Perubahan"}
+              {formLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menyimpan...
+                </>
+              ) : (
+                "Simpan Perubahan"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -805,48 +1175,89 @@ export function TransaksiClient({
               <>
                 <div className="rounded-xl border border-slate-800 bg-slate-800/50 p-4 space-y-2">
                   <p className="text-sm text-slate-300">
-                    <span className="font-medium text-white">Roll:</span>{" "}{selectedTx?.roll.rollName}
+                    <span className="font-medium text-white">Roll:</span>{" "}
+                    {selectedTx?.roll.rollName}
                   </p>
                   <p className="text-sm text-slate-300">
-                    <span className="font-medium text-white">Ukuran:</span>{" "}
-                    5cm × 1,4cm (fixed)
+                    <span className="font-medium text-white">Ukuran:</span> 5cm
+                    × 1,4cm (fixed)
                   </p>
                   <p className="text-sm text-slate-300">
                     <span className="font-medium text-white">Detail Nama:</span>{" "}
                     {selectedTx?.numberOfDetails ?? 0} nama
                   </p>
                 </div>
-                {(!selectedTx?.numberOfDetails || selectedTx.numberOfDetails === 0) && (
+                {(!selectedTx?.numberOfDetails ||
+                  selectedTx.numberOfDetails === 0) && (
                   <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/20 p-3 text-sm text-yellow-400">
-                    ⚠️ Transaksi ini belum memiliki detail nama. Edit transaksi terlebih dahulu untuk menambahkan nama.
+                    ⚠️ Transaksi ini belum memiliki detail nama. Edit transaksi
+                    terlebih dahulu untuk menambahkan nama.
                   </div>
                 )}
                 <p className="text-sm text-slate-400">
-                  Sistem akan me-render semua label sesuai font dan background yang dipilih, lalu menghasilkan file PNG beresolusi 300 DPI siap cetak.
+                  Sistem akan me-render semua label sesuai font dan background
+                  yang dipilih, lalu menghasilkan file PNG beresolusi 300 DPI
+                  siap cetak.
                 </p>
-                <Button onClick={handleGenerate} disabled={generateLoading || !selectedTx?.numberOfDetails} className="w-full bg-purple-600 hover:bg-purple-700">
-                  {generateLoading
-                    ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sedang Generate...</>
-                    : <><Wand2 className="mr-2 h-4 w-4" /> Generate Sekarang</>}
+                <Button
+                  onClick={handleGenerate}
+                  disabled={generateLoading || !selectedTx?.numberOfDetails}
+                  className="w-full bg-purple-600 hover:bg-purple-700"
+                >
+                  {generateLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sedang
+                      Generate...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="mr-2 h-4 w-4" /> Generate Sekarang
+                    </>
+                  )}
                 </Button>
               </>
             ) : (
               <div className="space-y-4">
                 <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 space-y-2">
-                  <p className="text-green-400 font-semibold flex items-center gap-2">✅ Label Berhasil Di-generate!</p>
-                  <p className="text-sm text-slate-300">Total Label: <span className="text-white font-medium">{generateResult.totalLabels}</span></p>
-                  <p className="text-sm text-slate-300">Total Halaman: <span className="text-white font-medium">{generateResult.totalPages}</span></p>
+                  <p className="text-green-400 font-semibold flex items-center gap-2">
+                    ✅ Label Berhasil Di-generate!
+                  </p>
+                  <p className="text-sm text-slate-300">
+                    Total Label:{" "}
+                    <span className="text-white font-medium">
+                      {generateResult.totalLabels}
+                    </span>
+                  </p>
+                  <p className="text-sm text-slate-300">
+                    Total Halaman:{" "}
+                    <span className="text-white font-medium">
+                      {generateResult.totalPages}
+                    </span>
+                  </p>
                 </div>
-                <a href={generateResult.outputPath} target="_blank" rel="noopener noreferrer" download>
-                  <Button className="w-full bg-green-600 hover:bg-green-700">
-                    <Download className="mr-2 h-4 w-4" /> Download PNG
-                  </Button>
-                </a>
+                <Button
+                  className="w-full bg-green-600 hover:bg-green-700"
+                  onClick={() => {
+                    if (!generateResult?.base64) return;
+                    const link = document.createElement("a");
+                    link.href = `data:image/png;base64,${generateResult.base64}`;
+                    link.download = `label_${selectedTx?.id?.slice(0, 8) ?? "output"}.png`;
+                    link.click();
+                  }}
+                >
+                  <Download className="mr-2 h-4 w-4" /> Download PNG
+                </Button>
               </div>
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setGenerateDialogOpen(false)} className="border-slate-700 text-slate-300 hover:bg-slate-800">Tutup</Button>
+            <Button
+              variant="outline"
+              onClick={() => setGenerateDialogOpen(false)}
+              className="border-slate-700 text-slate-300 hover:bg-slate-800"
+            >
+              Tutup
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -862,9 +1273,14 @@ export function TransaksiClient({
           <div className="space-y-4 py-4">
             {/* Excel/CSV Upload */}
             <div className="rounded-xl border border-dashed border-slate-700 bg-slate-800/40 p-4">
-              <p className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">📂 Upload File Excel / CSV</p>
+              <p className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">
+                📂 Upload File Excel / CSV
+              </p>
               <div className="flex items-center gap-3">
-                <label htmlFor="excelFileInput" className="flex-1 cursor-pointer">
+                <label
+                  htmlFor="excelFileInput"
+                  className="flex-1 cursor-pointer"
+                >
                   <div className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 hover:border-blue-500/50 hover:bg-slate-800 transition-colors">
                     <Upload className="h-4 w-4 text-blue-400 shrink-0" />
                     <span className="text-sm text-slate-300 truncate">
@@ -879,22 +1295,32 @@ export function TransaksiClient({
                     onChange={handleExcelFileChange}
                   />
                 </label>
-                {batchExcelLoading && <Loader2 className="h-4 w-4 animate-spin text-blue-400 shrink-0" />}
+                {batchExcelLoading && (
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-400 shrink-0" />
+                )}
               </div>
               <p className="mt-1.5 text-xs text-slate-500">
-                Kolom pertama = nama, atau gunakan header &quot;nama&quot; / &quot;name&quot; untuk deteksi otomatis
+                Kolom pertama = nama, atau gunakan header &quot;nama&quot; /
+                &quot;name&quot; untuk deteksi otomatis
               </p>
             </div>
 
             <div className="flex items-center gap-3">
               <div className="flex-1 border-t border-slate-800" />
-              <span className="text-xs text-slate-500">atau ketik/paste manual</span>
+              <span className="text-xs text-slate-500">
+                atau ketik/paste manual
+              </span>
               <div className="flex-1 border-t border-slate-800" />
             </div>
 
             {/* Manual Text */}
             <div className="space-y-2">
-              <Label className="text-slate-300">Daftar Nama <span className="text-xs text-slate-500">(satu nama per baris)</span></Label>
+              <Label className="text-slate-300">
+                Daftar Nama{" "}
+                <span className="text-xs text-slate-500">
+                  (satu nama per baris)
+                </span>
+              </Label>
               <Textarea
                 placeholder={"Andi Pratama\nSiti Rahayu\nBudi Santoso\n..."}
                 value={batchNamesText}
@@ -902,46 +1328,87 @@ export function TransaksiClient({
                 className="border-slate-700 bg-slate-800 text-white placeholder:text-slate-600 min-h-36 font-mono text-sm"
               />
               <p className="text-xs text-slate-500">
-                {batchNamesText.split("\n").filter((n) => n.trim()).length} nama terdeteksi.
+                {batchNamesText.split("\n").filter((n) => n.trim()).length} nama
+                terdeteksi.
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-slate-300 text-sm">Font Default</Label>
-                <Select value={batchFontId} onValueChange={(v) => setBatchFontId(v ?? "")}>
+                <Select
+                  value={batchFontId}
+                  onValueChange={(v) => setBatchFontId(v ?? "")}
+                >
                   <SelectTrigger className="border-slate-700 bg-slate-800 text-white">
                     <SelectValue placeholder="Pilih font..." />
                   </SelectTrigger>
                   <SelectContent className="border-slate-700 bg-slate-900 text-white">
-                    {fonts.map((f) => <SelectItem key={f.id} value={f.id}>{f.name}</SelectItem>)}
+                    {fonts.map((f) => (
+                      <SelectItem key={f.id} value={f.id}>
+                        {f.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label className="text-slate-300 text-sm">Background Default</Label>
-                <Select value={batchBackgroundId} onValueChange={(v) => setBatchBackgroundId(v ?? "")}>
+                <Label className="text-slate-300 text-sm">
+                  Background Default
+                </Label>
+                <Select
+                  value={batchBackgroundId}
+                  onValueChange={(v) => setBatchBackgroundId(v ?? "")}
+                >
                   <SelectTrigger className="border-slate-700 bg-slate-800 text-white">
                     <SelectValue placeholder="Pilih background..." />
                   </SelectTrigger>
                   <SelectContent className="border-slate-700 bg-slate-900 text-white">
-                    {backgrounds.map((b) => <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>)}
+                    {backgrounds.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div className="space-y-2">
-              <Label className="text-slate-300 text-sm">Jumlah Baris per Nama</Label>
-              <Input type="number" min={1} max={100} value={batchQuantity} onChange={(e) => setBatchQuantity(e.target.value)} className="border-slate-700 bg-slate-800 text-white w-32" />
+              <Label className="text-slate-300 text-sm">
+                Jumlah Baris per Nama
+              </Label>
+              <Input
+                type="number"
+                min={1}
+                max={100}
+                value={batchQuantity}
+                onChange={(e) => setBatchQuantity(e.target.value)}
+                className="border-slate-700 bg-slate-800 text-white w-32"
+              />
             </div>
             <p className="text-xs text-slate-500">
-              Setelah import, Anda bisa mengubah font/background per nama secara individual di tabel.
+              Setelah import, Anda bisa mengubah font/background per nama secara
+              individual di tabel.
             </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setBatchImportOpen(false)} className="border-slate-700 text-slate-300 hover:bg-slate-800">Batal</Button>
-            <Button onClick={() => applyBatchImport(batchTargetCreate ? "create" : "edit")} disabled={batchNamesText.split("\n").filter((n) => n.trim()).length === 0}>
-              <Upload className="mr-2 h-4 w-4" /> Import {batchNamesText.split("\n").filter((n) => n.trim()).length} Nama
+            <Button
+              variant="outline"
+              onClick={() => setBatchImportOpen(false)}
+              className="border-slate-700 text-slate-300 hover:bg-slate-800"
+            >
+              Batal
+            </Button>
+            <Button
+              onClick={() =>
+                applyBatchImport(batchTargetCreate ? "create" : "edit")
+              }
+              disabled={
+                batchNamesText.split("\n").filter((n) => n.trim()).length === 0
+              }
+            >
+              <Upload className="mr-2 h-4 w-4" /> Import{" "}
+              {batchNamesText.split("\n").filter((n) => n.trim()).length} Nama
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -954,12 +1421,29 @@ export function TransaksiClient({
             <DialogTitle className="text-white">Konfirmasi Hapus</DialogTitle>
           </DialogHeader>
           <p className="text-slate-300">
-            Hapus transaksi ini? Semua detail nama dan output file akan ikut terhapus.
+            Hapus transaksi ini? Semua detail nama dan output file akan ikut
+            terhapus.
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} className="border-slate-700 text-slate-300 hover:bg-slate-800">Batal</Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={formLoading}>
-              {formLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menghapus...</> : "Hapus"}
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              className="border-slate-700 text-slate-300 hover:bg-slate-800"
+            >
+              Batal
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={formLoading}
+            >
+              {formLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menghapus...
+                </>
+              ) : (
+                "Hapus"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

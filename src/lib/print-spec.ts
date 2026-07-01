@@ -32,7 +32,7 @@ export const LABELS_PER_ROW = 10;
 export const LABELS_PER_PACK = 5;
 
 // ⚠️ PRODUCTION-CRITICAL: gap antar paket ke bawah (CRE-12).
-export const GAP_ANTAR_PAKET_CM = 0.60;
+export const GAP_ANTAR_PAKET_CM = 0.6;
 
 // ⚠️ PRODUCTION-CRITICAL: lebar area barcode — sisa dari 58cm setelah label + gap (CRE-12).
 // 58cm - (10 × 5cm + 9 × 0.15cm) = 58 - 51.35 = 6.65cm
@@ -46,7 +46,9 @@ export const LABEL_WIDTH_PX = Math.round(LABEL_WIDTH_CM * CM_TO_PX);
 export const LABEL_HEIGHT_PX = Math.round(LABEL_HEIGHT_CM * CM_TO_PX);
 
 // ⚠️ PRODUCTION-CRITICAL: spacing dalam pixel.
-export const SPACING_HORIZONTAL_PX = Math.round(SPACING_HORIZONTAL_CM * CM_TO_PX);
+export const SPACING_HORIZONTAL_PX = Math.round(
+  SPACING_HORIZONTAL_CM * CM_TO_PX,
+);
 export const SPACING_VERTICAL_PX = Math.round(SPACING_VERTICAL_CM * CM_TO_PX);
 
 // ⚠️ PRODUCTION-CRITICAL: barcode width dalam pixel.
@@ -63,7 +65,7 @@ export const PAKET_HEIGHT_PX = Math.round(PAKET_HEIGHT_CM * CM_TO_PX);
 export const GAP_ANTAR_PAKET_PX = Math.round(GAP_ANTAR_PAKET_CM * CM_TO_PX);
 
 // ⚠️ PRODUCTION-CRITICAL: rasio maksimum tinggi font terhadap tinggi label.
-export const MAX_FONT_RATIO = 0.60;
+export const MAX_FONT_RATIO = 0.6;
 
 // ⚠️ PRODUCTION-CRITICAL: ukuran font minimum dalam pixel.
 export const MIN_FONT_SIZE_PX = 8;
@@ -74,8 +76,11 @@ export const MAX_TEXT_WIDTH_RATIO = 0.86;
 // ⚠️ PRODUCTION-CRITICAL: format output gambar.
 export const OUTPUT_FORMAT = "image/png";
 
-// ⚠️ PRODUCTION-CRITICAL: direktori output absolut.
-export const OUTPUT_DIR = path.join(process.cwd(), "public", "output");
+// ⚠️ PRODUCTION-CRITICAL: direktori output.
+// Vercel only allows writes to /tmp; local dev uses public/output.
+export const OUTPUT_DIR = process.env.VERCEL
+  ? "/tmp/output"
+  : path.join(process.cwd(), "public", "output");
 
 // ⚠️ PRODUCTION-CRITICAL: warna latar halaman (putih).
 export const PAGE_BG_COLOR = "#FFFFFF";

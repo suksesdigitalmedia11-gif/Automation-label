@@ -80,7 +80,6 @@ function ensureFontRegistered(fontFamily: string, filePath: string): string {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-
 async function loadBackgroundImage(imgPath: string): Promise<Image | null> {
   try {
     const absPath = path.isAbsolute(imgPath)
@@ -93,8 +92,12 @@ async function loadBackgroundImage(imgPath: string): Promise<Image | null> {
   }
 }
 
-async function generateBarcodeImage(text: string, widthPx: number, heightPx: number): Promise<Image> {
-  const buffer = bwipjs.toBuffer({
+async function generateBarcodeImage(
+  text: string,
+  widthPx: number,
+  heightPx: number,
+): Promise<Image> {
+  const buffer = await bwipjs.toBuffer({
     bcid: "code128",
     text,
     scale: 3,
@@ -103,7 +106,20 @@ async function generateBarcodeImage(text: string, widthPx: number, heightPx: num
     includetext: true,
     textxalign: "center",
   });
-  return await loadImage(buffer);
+  // @napi-rs/canvas loadImage doesn't accept raw bwip-js buffer directly.
+  // Write to a temp file first, then load.
+  const tmpDir = path.join(OUTPUT_DIR, ".tmp");
+  fs.mkdirSync(tmpDir, { recursive: true });
+  const tmpPath = path.join(
+    tmpDir,
+    `barcode_${Date.now()}_${Math.random().toString(36).slice(2)}.png`,
+  );
+  fs.writeFileSync(tmpPath, buffer);
+  try {
+    return await loadImage(tmpPath);
+  } finally {
+    fs.unlinkSync(tmpPath);
+  }
 }
 
 async function drawLabel(
@@ -116,7 +132,7 @@ async function drawLabel(
   fontFamily: string,
   fontColor: string,
   bgImage: Image | null,
-  bgFallbackColor: string
+  bgFallbackColor: string,
 ): Promise<void> {
   ctx.save();
   ctx.translate(x, y);
@@ -154,7 +170,9 @@ async function drawLabel(
 
 // ─── Main Generator ───────────────────────────────────────────────────────────
 
-export async function generateLabels(opts: GenerateOptions): Promise<GenerateResult> {
+export async function generateLabels(
+  opts: GenerateOptions,
+): Promise<GenerateResult> {
   const { transactionId, details, resiNumber } = opts;
 
   interface LabelCell {
@@ -174,7 +192,10 @@ export async function generateLabels(opts: GenerateOptions): Promise<GenerateRes
   const bgCache = new Map<string, Image | null>();
   for (const d of details) {
     if (d.backgroundImagePath && !bgCache.has(d.backgroundImagePath)) {
-      bgCache.set(d.backgroundImagePath, await loadBackgroundImage(d.backgroundImagePath));
+      bgCache.set(
+        d.backgroundImagePath,
+        await loadBackgroundImage(d.backgroundImagePath),
+      );
     }
   }
 
@@ -212,7 +233,7 @@ export async function generateLabels(opts: GenerateOptions): Promise<GenerateRes
       barcodeImg = await generateBarcodeImage(
         resiNumber.trim(),
         BARCODE_WIDTH_PX,
-        PAKET_HEIGHT_PX
+        PAKET_HEIGHT_PX,
       );
     } catch (err) {
       console.error("[LABEL-GEN] Failed to generate barcode:", err);
@@ -243,14 +264,21 @@ export async function generateLabels(opts: GenerateOptions): Promise<GenerateRes
         if (cellIdx >= queue.length) break;
 
         const cell = queue[cellIdx];
-        const lx = labelGridStartX + col * (LABEL_WIDTH_PX + SPACING_HORIZONTAL_PX);
+        const lx =
+          labelGridStartX + col * (LABEL_WIDTH_PX + SPACING_HORIZONTAL_PX);
         const ly = pktY + row * (LABEL_HEIGHT_PX + SPACING_VERTICAL_PX);
 
         await drawLabel(
-          ctx, lx, ly,
-          LABEL_WIDTH_PX, LABEL_HEIGHT_PX,
-          cell.name, cell.fontFamily, cell.fontColor,
-          cell.bgImage, cell.bgFallback
+          ctx,
+          lx,
+          ly,
+          LABEL_WIDTH_PX,
+          LABEL_HEIGHT_PX,
+          cell.name,
+          cell.fontFamily,
+          cell.fontColor,
+          cell.bgImage,
+          cell.bgFallback,
         );
       }
     }

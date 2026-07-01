@@ -19,7 +19,7 @@ export async function POST(request: NextRequest) {
     if (!transactionId) {
       return NextResponse.json(
         { error: "transactionId wajib diisi" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -41,14 +41,14 @@ export async function POST(request: NextRequest) {
     if (!tx) {
       return NextResponse.json(
         { error: "Transaksi tidak ditemukan" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
     if (tx.details.length === 0) {
       return NextResponse.json(
         { error: "Tambahkan minimal 1 detail nama terlebih dahulu" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -73,6 +73,14 @@ export async function POST(request: NextRequest) {
       resiNumber: tx.resiNumber ?? null,
     });
 
+    // Read generated PNG and encode as base64 (Vercel /tmp compatible)
+    const outputDir = process.env.VERCEL
+      ? "/tmp/output"
+      : path.join(process.cwd(), "public", "output");
+    const outputFile = path.join(outputDir, transactionId, "output.png");
+    const pngBuffer = fs.readFileSync(outputFile);
+    const base64 = pngBuffer.toString("base64");
+
     // Update transaction path and status
     await prisma.transaction.update({
       where: { id: transactionId },
@@ -87,12 +95,15 @@ export async function POST(request: NextRequest) {
       outputPath: result.outputPath,
       totalLabels: result.totalLabels,
       totalPages: result.totalPages,
+      base64,
     });
   } catch (err) {
     console.error("[GENERATE_LABELS]", err);
     return NextResponse.json(
-      { error: "Gagal generate label. Periksa konfigurasi font dan background." },
-      { status: 500 }
+      {
+        error: "Gagal generate label. Periksa konfigurasi font dan background.",
+      },
+      { status: 500 },
     );
   }
 }
@@ -108,7 +119,10 @@ export async function GET(request: NextRequest) {
   const transactionId = searchParams.get("transactionId");
 
   if (!transactionId) {
-    return NextResponse.json({ error: "transactionId required" }, { status: 400 });
+    return NextResponse.json(
+      { error: "transactionId required" },
+      { status: 400 },
+    );
   }
 
   const tx = await prisma.transaction.findUnique({
@@ -120,7 +134,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ exists: false });
   }
 
-  const absPath = path.join(process.cwd(), "public", tx.path);
+  const absPath = process.env.VERCEL
+    ? path.join("/tmp", tx.path)
+    : path.join(process.cwd(), "public", tx.path);
   const exists = fs.existsSync(absPath);
 
   return NextResponse.json({ exists, path: tx.path, status: tx.status });

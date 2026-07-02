@@ -142,13 +142,13 @@ async function drawLabel(
   ctx.fillStyle = fontColor;
 
   while (fontSize > minFontPx) {
-    ctx.font = `bold ${fontSize}px ${fontFamily}`;
+    ctx.font = `bold ${fontSize}px "${fontFamily}"`;
     const m = ctx.measureText(name);
     if (m.width <= maxTextWidth) break;
     fontSize -= 1;
   }
 
-  ctx.font = `bold ${fontSize}px ${fontFamily}`;
+  ctx.font = `bold ${fontSize}px "${fontFamily}"`;
   const measured = ctx.measureText(name);
   const textX = (labelW - measured.width) / 2;
   const textY = labelH / 2;
@@ -276,7 +276,11 @@ export async function generateLabels(
       ctx.fillStyle = "#000000";
       // Determine font size based on BARCODE_WIDTH_PX but keep it reasonable
       const resiFontSize = Math.min(60, Math.round(BARCODE_WIDTH_PX * 0.15));
-      ctx.font = `bold ${resiFontSize}px Arial, sans-serif`;
+      
+      // Use the first label's font as fallback in case Arial is missing (e.g., on Vercel)
+      const fallbackFont = tx.packets[0]?.[0]?.fontFamily || "Arial";
+      ctx.font = `bold ${resiFontSize}px "${fallbackFont}", Arial, sans-serif`;
+      
       ctx.textBaseline = "middle";
       ctx.textAlign = "center";
       

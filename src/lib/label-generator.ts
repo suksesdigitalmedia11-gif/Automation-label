@@ -141,18 +141,57 @@ async function drawLabel(
   ctx.textBaseline = "middle";
   ctx.fillStyle = fontColor;
 
-  while (fontSize > minFontPx) {
+  let lines: string[] = [];
+
+  while (fontSize >= minFontPx) {
     ctx.font = `bold ${fontSize}px "${fontFamily}"`;
-    const m = ctx.measureText(name);
-    if (m.width <= maxTextWidth) break;
+    
+    const words = name.split(" ");
+    lines = [];
+    let currentLine = words[0];
+
+    for (let i = 1; i < words.length; i++) {
+      const word = words[i];
+      const width = ctx.measureText(currentLine + " " + word).width;
+      if (width < maxTextWidth) {
+        currentLine += " " + word;
+      } else {
+        lines.push(currentLine);
+        currentLine = word;
+      }
+    }
+    lines.push(currentLine);
+
+    const lineHeight = fontSize * 1.2;
+    const totalHeight = lines.length * lineHeight;
+    
+    const hasOversizedWord = lines.some(line => ctx.measureText(line).width > maxTextWidth);
+
+    if (totalHeight <= labelH * 0.8 && !hasOversizedWord) {
+      break;
+    }
+    
+    if (fontSize === minFontPx) {
+        break;
+    }
     fontSize -= 1;
+    if (fontSize < minFontPx) {
+        fontSize = minFontPx;
+        break;
+    }
   }
 
   ctx.font = `bold ${fontSize}px "${fontFamily}"`;
-  const measured = ctx.measureText(name);
-  const textX = (labelW - measured.width) / 2;
-  const textY = labelH / 2;
-  ctx.fillText(name, textX, textY);
+  const lineHeight = fontSize * 1.2;
+  const totalTextHeight = lines.length * lineHeight;
+  let startY = (labelH - totalTextHeight) / 2 + (lineHeight / 2);
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    const m = ctx.measureText(line);
+    const textX = (labelW - Math.min(m.width, maxTextWidth)) / 2;
+    ctx.fillText(line, textX, startY + (i * lineHeight), maxTextWidth);
+  }
 
   ctx.restore();
 }
@@ -179,13 +218,6 @@ export async function generateLabels(
 
   // Pre-register all fonts and cache all backgrounds
   const allDetails = transactions.flatMap((t) => t.details);
-
-  // Register Default Resi Font (Montserrat)
-  const montserratPath = path.join(process.cwd(), "public", "fonts", "Montserrat-Bold.ttf");
-  let resiFontFamily = "Arial";
-  if (fs.existsSync(montserratPath)) {
-      resiFontFamily = ensureFontRegistered("MontserratResi", montserratPath);
-  }
   
   for (const d of allDetails) {
     if (d.fontFilePath && d.fontFileBase64) {
@@ -287,12 +319,12 @@ export async function generateLabels(
       ctx.save();
       ctx.fillStyle = "#000000";
       
-      // Vertical text: limits are PAKET_HEIGHT_PX (length) and BARCODE_WIDTH_PX (height/thickness)
-      const resiFontSize = Math.min(250, Math.round(BARCODE_WIDTH_PX * 0.4));
+      // Resi text: reasonable size, not too huge
+      const resiFontSize = Math.min(75, Math.round(BARCODE_WIDTH_PX * 0.2));
       
-      // Use Montserrat for the resi font, fallback to the label's font if not found, then Arial
+      // Designer feedback: Resi font should match the label's font!
       const labelFont = tx.packets[0]?.[0]?.fontFamily || "Arial";
-      ctx.font = `bold ${resiFontSize}px "${resiFontFamily}", "${labelFont}", Arial, sans-serif`;
+      ctx.font = `bold ${resiFontSize}px "${labelFont}", Arial, sans-serif`;
       
       ctx.textBaseline = "middle";
       ctx.textAlign = "center";

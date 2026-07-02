@@ -67,11 +67,12 @@ export const GAP_ANTAR_PAKET_PX = Math.round(GAP_ANTAR_PAKET_CM * CM_TO_PX);
 // ⚠️ PRODUCTION-CRITICAL: rasio maksimum tinggi font terhadap tinggi label.
 export const MAX_FONT_RATIO = 0.6;
 
-// ⚠️ PRODUCTION-CRITICAL: ukuran font minimum dalam pixel.
-export const MIN_FONT_SIZE_PX = 8;
+// ⚠️ PRODUCTION-CRITICAL: ukuran font minimum dalam pixel. (28px ≈ 7pt @ 300DPI)
+export const MIN_FONT_SIZE_PX = 28;
 
 // ⚠️ PRODUCTION-CRITICAL: rasio lebar maksimum teks terhadap lebar label.
-export const MAX_TEXT_WIDTH_RATIO = 0.86;
+// Dikurangi menjadi 0.70 agar tidak menabrak bintang di plat desain
+export const MAX_TEXT_WIDTH_RATIO = 0.70;
 
 // ⚠️ PRODUCTION-CRITICAL: format output gambar.
 export const OUTPUT_FORMAT = "image/png";

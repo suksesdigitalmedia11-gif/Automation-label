@@ -18,28 +18,34 @@ export async function GET(
   try {
     const bg = await prisma.materialBackground.findUnique({
       where: { id },
-      select: { imagePath: true },
+      select: { imagePath: true, fileBase64: true },
     });
 
     if (!bg?.imagePath) {
       return NextResponse.json({ error: "No image" }, { status: 404 });
     }
 
-    const dir = process.env.VERCEL
-      ? path.join("/tmp", "backgrounds")
-      : path.join(process.cwd(), "public", "backgrounds");
+    let buffer: Buffer;
 
-    const filePath = path.join(dir, bg.imagePath);
+    if (bg.fileBase64) {
+      buffer = Buffer.from(bg.fileBase64, "base64");
+    } else {
+      const dir = process.env.VERCEL
+        ? path.join("/tmp", "backgrounds")
+        : path.join(process.cwd(), "public", "backgrounds");
 
-    if (!fs.existsSync(filePath)) {
-      return NextResponse.json({ error: "File not found" }, { status: 404 });
+      const filePath = path.join(dir, bg.imagePath);
+
+      if (!fs.existsSync(filePath)) {
+        return NextResponse.json({ error: "File not found" }, { status: 404 });
+      }
+      buffer = fs.readFileSync(filePath);
     }
 
-    const buffer = fs.readFileSync(filePath);
     const ext = path.extname(bg.imagePath).toLowerCase();
     const mime = ext === ".png" ? "image/png" : ext === ".jpg" || ext === ".jpeg" ? "image/jpeg" : ext === ".webp" ? "image/webp" : "image/png";
 
-    return new NextResponse(buffer, {
+    return new NextResponse(buffer as unknown as BodyInit, {
       headers: {
         "Content-Type": mime,
         "Cache-Control": "public, max-age=31536000, immutable",

@@ -64,9 +64,11 @@ export async function POST(request: NextRequest) {
         fontFilePath: d.font?.filePath
           ? path.join(FONTS_DIR, d.font.filePath)
           : null,
+        fontFileBase64: d.font?.fileBase64 ?? null,
         backgroundImagePath: d.background?.imagePath
           ? path.join(BG_DIR, d.background.imagePath)
           : null,
+        backgroundFileBase64: d.background?.fileBase64 ?? null,
         fontColor: d.background?.fontColor ?? "#FFFFFF",
         quantity: d.quantity,
       })),

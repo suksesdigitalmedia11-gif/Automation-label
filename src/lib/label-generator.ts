@@ -46,7 +46,9 @@ export interface LabelDetail {
   name: string;
   fontFamily?: string | null;
   fontFilePath?: string | null;
+  fontFileBase64?: string | null;
   backgroundImagePath?: string | null;
+  backgroundFileBase64?: string | null;
   fontColor?: string | null;
   quantity: number;
 }
@@ -179,6 +181,13 @@ export async function generateLabels(
   const allDetails = transactions.flatMap((t) => t.details);
   
   for (const d of allDetails) {
+    if (d.fontFilePath && d.fontFileBase64) {
+      const absPath = path.isAbsolute(d.fontFilePath) ? d.fontFilePath : path.join(FONTS_DIR, d.fontFilePath);
+      if (!fs.existsSync(absPath)) {
+        fs.mkdirSync(path.dirname(absPath), { recursive: true });
+        fs.writeFileSync(absPath, Buffer.from(d.fontFileBase64, "base64"));
+      }
+    }
     if (d.fontFamily && d.fontFilePath) {
       d.fontFamily = ensureFontRegistered(d.fontFamily, d.fontFilePath);
     }
@@ -186,6 +195,13 @@ export async function generateLabels(
 
   const bgCache = new Map<string, Image | null>();
   for (const d of allDetails) {
+    if (d.backgroundImagePath && d.backgroundFileBase64) {
+      const absPath = path.isAbsolute(d.backgroundImagePath) ? d.backgroundImagePath : path.join(BACKGROUNDS_DIR, d.backgroundImagePath);
+      if (!fs.existsSync(absPath)) {
+        fs.mkdirSync(path.dirname(absPath), { recursive: true });
+        fs.writeFileSync(absPath, Buffer.from(d.backgroundFileBase64, "base64"));
+      }
+    }
     if (d.backgroundImagePath && !bgCache.has(d.backgroundImagePath)) {
       bgCache.set(
         d.backgroundImagePath,

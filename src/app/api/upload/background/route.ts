@@ -53,22 +53,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    fs.mkdirSync(BG_DIR, { recursive: true });
-
-    // Delete old file
-    if (bg.imagePath) {
-      const oldPath = path.join(BG_DIR, bg.imagePath);
-      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-    }
-
     const safeName = `${backgroundId}${ext}`;
-    const destPath = path.join(BG_DIR, safeName);
     const bytes = await file.arrayBuffer();
-    fs.writeFileSync(destPath, Buffer.from(bytes));
+    const base64String = Buffer.from(bytes).toString("base64");
 
     await prisma.materialBackground.update({
       where: { id: backgroundId },
-      data: { imagePath: safeName },
+      data: { 
+        imagePath: safeName,
+        fileBase64: base64String
+      },
     });
 
     return NextResponse.json({ success: true, imagePath: safeName });

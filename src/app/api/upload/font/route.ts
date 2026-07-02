@@ -55,26 +55,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Ensure directory
-    fs.mkdirSync(FONTS_DIR, { recursive: true });
-
-    // Delete old file if exists
-    if (font.filePath) {
-      const oldPath = path.join(FONTS_DIR, font.filePath);
-      if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-    }
-
-    // Save new file
     const safeName = `${fontId}${ext}`;
-    const destPath = path.join(FONTS_DIR, safeName);
     const bytes = await file.arrayBuffer();
-    fs.writeFileSync(destPath, Buffer.from(bytes));
+    const base64String = Buffer.from(bytes).toString("base64");
 
     // Update DB
     await prisma.materialFont.update({
       where: { id: fontId },
       data: {
         filePath: safeName,
+        fileBase64: base64String,
         fontFamily: font.fontFamily || font.name,
       },
     });

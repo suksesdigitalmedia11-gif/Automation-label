@@ -81,6 +81,7 @@ model MaterialFont {
   id                 String              @id @default(uuid())
   name               String              @unique
   filePath           String?             @map("file_path")
+  fileBase64         String?             @map("file_base64") @db.Text
   fontFamily         String?             @map("font_family")
   createdAt          DateTime            @default(now()) @map("created_at")
   updatedAt          DateTime            @updatedAt @map("updated_at")
@@ -93,6 +94,7 @@ model MaterialBackground {
   id                 String              @id @default(uuid())
   name               String              @unique
   imagePath          String?             @map("image_path")
+  fileBase64         String?             @map("file_base64") @db.Text
   fontColor          String              @default("#FFFFFF") @map("font_color")
   createdAt          DateTime            @default(now()) @map("created_at")
   updatedAt          DateTime            @updatedAt @map("updated_at")

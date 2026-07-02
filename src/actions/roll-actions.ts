@@ -8,7 +8,7 @@ import { requireAuth, safeError } from "@/lib/auth-helpers";
 
 const createRollSchema = z.object({
   rollName: z.string().min(1, "Nama roll wajib diisi"),
-  heightCm: z.coerce.number().positive("Tinggi harus lebih dari 0"),
+  heightCm: z.coerce.number().min(0, "Tinggi tidak boleh negatif"),
   quantity: z.coerce.number().int().positive("Quantity harus lebih dari 0"),
   path: z.string().optional().nullable(),
   status: z.enum(["Processed", "Failed", "Completed"]).optional(),

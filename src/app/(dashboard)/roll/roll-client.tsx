@@ -161,13 +161,12 @@ export function RollClient({
   const resetCreateForm = () => {
     setRollName("");
     setHeightCm("");
-    setQuantity("");
     setRollPath("");
   };
 
   const handleCreate = async () => {
-    if (!rollName || !heightCm || !quantity) {
-      toast.error("Harap isi semua field yang wajib");
+    if (!rollName) {
+      toast.error("Harap isi Nama Roll");
       return;
     }
     setFormLoading(true);
@@ -175,7 +174,7 @@ export function RollClient({
       const result = await createRoll({
         rollName,
         heightCm: 0,
-        quantity: parseInt(quantity) || 0,
+        quantity: 1,
         path: rollPath || null,
       });
       if (result.error) {
@@ -314,20 +313,7 @@ export function RollClient({
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="quantity" className="text-slate-300">
-                  Quantity (Estimasi Halaman) <span className="text-red-400">*</span>
-                </Label>
-                <Input
-                  id="quantity"
-                  type="number"
-                  placeholder="Contoh: 100"
-                  value={quantity}
-                  onChange={(e) => setQuantity(e.target.value)}
-                  className="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500"
-                  title="Total estimasi halaman pada satu roll kertas"
-                />
-              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="rollPath" className="text-slate-300">
                   Path

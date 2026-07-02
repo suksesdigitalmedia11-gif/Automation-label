@@ -883,12 +883,12 @@ export function TransaksiClient({
                 type="text"
                 value={createResi}
                 onChange={(e) => setCreateResi(e.target.value)}
-                placeholder="Masukkan nomor resi..."
+                placeholder="Resi1, Resi2..."
                 className="border-slate-700 bg-slate-800 text-white"
               />
               <p className="text-xs text-slate-500">
-                📐 Ukuran label fixed: 5cm × 1,4cm | Media: 58cm | 1 paket = 50
-                pcs | Resi akan jadi barcode di output
+                Tip: Untuk cetak banyak resi secara masal, pisahkan dengan koma (contoh: JNT123, JNT456).<br/>
+                📐 Ukuran label: 5cm × 1,4cm | 1 paket = 50 pcs
               </p>
             </div>
 
@@ -1047,12 +1047,12 @@ export function TransaksiClient({
                 type="text"
                 value={editResi}
                 onChange={(e) => setEditResi(e.target.value)}
-                placeholder="Masukkan nomor resi..."
+                placeholder="Resi1, Resi2..."
                 className="border-slate-700 bg-slate-800 text-white"
               />
               <p className="text-xs text-slate-500">
-                📐 Ukuran label fixed: 5cm × 1,4cm | Media: 58cm | 1 paket = 50
-                pcs
+                Tip: Untuk cetak banyak resi secara masal, pisahkan dengan koma (contoh: JNT123, JNT456).<br/>
+                📐 Ukuran label: 5cm × 1,4cm | 1 paket = 50 pcs
               </p>
             </div>
 

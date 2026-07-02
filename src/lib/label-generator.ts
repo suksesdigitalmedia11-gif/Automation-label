@@ -173,7 +173,7 @@ export async function generateLabels(
   }
 
   interface TransactionPack {
-    resiNumber: string;
+    resiList: string[];
     packets: LabelCell[][];
   }
 
@@ -240,8 +240,12 @@ export async function generateLabels(
       packets.push(queue.slice(p * labelsPerPaket, (p + 1) * labelsPerPaket));
     }
 
+    const resiStr = tx.resiNumber?.trim() || "-";
+    const resiList = resiStr.split(/[,;\\n\\t]+/).map(r => r.trim()).filter(r => r.length > 0);
+    if (resiList.length === 0) resiList.push("-");
+
     transactionPacks.push({
-      resiNumber: tx.resiNumber?.trim() || "-",
+      resiList,
       packets,
     });
     totalPackets += txPacketsCount;
@@ -268,14 +272,16 @@ export async function generateLabels(
   let currentPacketIndex = 0;
 
   for (const tx of transactionPacks) {
-    for (const packet of tx.packets) {
+    for (let pIdx = 0; pIdx < tx.packets.length; pIdx++) {
+      const packet = tx.packets[pIdx];
       const pktY = currentPacketIndex * (PAKET_HEIGHT_PX + GAP_ANTAR_PAKET_PX);
 
       // Draw Resi text on the left area (vertically centered in the packet area)
       ctx.save();
       ctx.fillStyle = "#000000";
-      // Determine font size based on BARCODE_WIDTH_PX but keep it reasonable
-      const resiFontSize = Math.min(60, Math.round(BARCODE_WIDTH_PX * 0.15));
+      
+      // Vertical text: limits are PAKET_HEIGHT_PX (length) and BARCODE_WIDTH_PX (height/thickness)
+      const resiFontSize = Math.min(250, Math.round(BARCODE_WIDTH_PX * 0.4));
       
       // Use the first label's font as fallback in case Arial is missing (e.g., on Vercel)
       const fallbackFont = tx.packets[0]?.[0]?.fontFamily || "Arial";
@@ -287,15 +293,19 @@ export async function generateLabels(
       const resiTextX = BARCODE_WIDTH_PX / 2;
       const resiTextY = pktY + (PAKET_HEIGHT_PX / 2);
       
-      // If resi text is very long, we might need to wrap it or draw it rotated, 
-      // but horizontal is easier if it fits. Let's just print it horizontally and let it squish/clip slightly if needed, 
-      // but usually resi fits in 6.65cm. We can also do multi-line if we split by space.
-      // We will just scale text to fit horizontally if it's too wide.
-      const m = ctx.measureText(tx.resiNumber);
-      if (m.width > BARCODE_WIDTH_PX * 0.9) {
-          ctx.fillText(tx.resiNumber, resiTextX, resiTextY, BARCODE_WIDTH_PX * 0.9);
+      ctx.translate(resiTextX, resiTextY);
+      ctx.rotate(-Math.PI / 2);
+      
+      const currentResi = tx.resiList[pIdx % tx.resiList.length];
+      
+      // Maximum length for the text is the height of the packet
+      const maxTextWidth = PAKET_HEIGHT_PX * 0.9;
+      const m = ctx.measureText(currentResi);
+      
+      if (m.width > maxTextWidth) {
+          ctx.fillText(currentResi, 0, 0, maxTextWidth);
       } else {
-          ctx.fillText(tx.resiNumber, resiTextX, resiTextY);
+          ctx.fillText(currentResi, 0, 0);
       }
       ctx.restore();
 

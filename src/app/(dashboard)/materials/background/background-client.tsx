@@ -2,12 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -91,7 +86,10 @@ export function BackgroundClient({ backgrounds, userRole }: Props) {
     }
     setFormLoading(true);
     try {
-      const result = await createBackground({ name: bgName, fontColor: bgFontColor });
+      const result = await createBackground({
+        name: bgName,
+        fontColor: bgFontColor,
+      });
       if (result.error) {
         toast.error(result.error);
       } else {
@@ -142,7 +140,7 @@ export function BackgroundClient({ backgrounds, userRole }: Props) {
   const openUploadDialog = (bg: Background) => {
     setSelectedBg(bg);
     setSelectedFile(null);
-    setPreviewUrl(bg.imagePath ? `/backgrounds/${bg.imagePath}` : null);
+    setPreviewUrl(bg.imagePath ? `/api/backgrounds/${bg.id}/image` : null);
     setUploadDialogOpen(true);
   };
 
@@ -221,7 +219,10 @@ export function BackgroundClient({ backgrounds, userRole }: Props) {
         {userRole === "admin" && (
           <Dialog
             open={dialogOpen}
-            onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}
+            onOpenChange={(open) => {
+              setDialogOpen(open);
+              if (!open) resetForm();
+            }}
           >
             <DialogTrigger render={<Button />}>
               <Plus className="mr-2 h-4 w-4" />
@@ -229,7 +230,9 @@ export function BackgroundClient({ backgrounds, userRole }: Props) {
             </DialogTrigger>
             <DialogContent className="border-slate-800 bg-slate-900 text-white sm:max-w-md">
               <DialogHeader>
-                <DialogTitle className="text-white">Tambah Background Baru</DialogTitle>
+                <DialogTitle className="text-white">
+                  Tambah Background Baru
+                </DialogTitle>
               </DialogHeader>
               <div className="space-y-4 py-4">
                 <div className="space-y-2">
@@ -267,18 +270,35 @@ export function BackgroundClient({ backgrounds, userRole }: Props) {
                       style={{ backgroundColor: bgFontColor }}
                     />
                   </div>
-                  <p className="text-xs text-slate-500">Warna teks yang akan tercetak di atas gambar label</p>
+                  <p className="text-xs text-slate-500">
+                    Warna teks yang akan tercetak di atas gambar label
+                  </p>
                 </div>
                 <p className="text-xs text-slate-500 italic">
-                  💡 Setelah ditambahkan, upload gambar plat-nya melalui tombol Upload di kartu background.
+                  💡 Setelah ditambahkan, upload gambar plat-nya melalui tombol
+                  Upload di kartu background.
                 </p>
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }} className="border-slate-700 text-slate-300 hover:bg-slate-800">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setDialogOpen(false);
+                    resetForm();
+                  }}
+                  className="border-slate-700 text-slate-300 hover:bg-slate-800"
+                >
                   Batal
                 </Button>
                 <Button onClick={handleCreate} disabled={formLoading}>
-                  {formLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menyimpan...</> : "Simpan"}
+                  {formLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
+                      Menyimpan...
+                    </>
+                  ) : (
+                    "Simpan"
+                  )}
                 </Button>
               </DialogFooter>
             </DialogContent>
@@ -297,13 +317,16 @@ export function BackgroundClient({ backgrounds, userRole }: Props) {
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {backgrounds.map((bg) => (
-            <Card key={bg.id} className="border-slate-800 bg-slate-900 hover:border-slate-700 transition-colors overflow-hidden">
+            <Card
+              key={bg.id}
+              className="border-slate-800 bg-slate-900 hover:border-slate-700 transition-colors overflow-hidden"
+            >
               {/* Preview image if available */}
               {bg.imagePath && (
                 <div className="h-24 w-full overflow-hidden bg-slate-800">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={`/backgrounds/${bg.imagePath}`}
+                    src={`/api/backgrounds/${bg.id}/image`}
                     alt={bg.name}
                     className="h-full w-full object-cover"
                   />
@@ -318,28 +341,48 @@ export function BackgroundClient({ backgrounds, userRole }: Props) {
                       </div>
                     )}
                     <div>
-                      <CardTitle className="text-sm font-medium text-white">{bg.name}</CardTitle>
+                      <CardTitle className="text-sm font-medium text-white">
+                        {bg.name}
+                      </CardTitle>
                       <div className="mt-1 flex items-center gap-1.5">
                         <div
                           className="h-3.5 w-3.5 rounded-full border border-slate-600"
                           style={{ backgroundColor: bg.fontColor }}
                           title={bg.fontColor}
                         />
-                        <span className="text-xs text-slate-400">{bg.fontColor}</span>
+                        <span className="text-xs text-slate-400">
+                          {bg.fontColor}
+                        </span>
                       </div>
                     </div>
                   </div>
                   <div className="flex gap-1">
                     {userRole === "admin" && (
-                      <Button variant="ghost" size="icon-xs" onClick={() => openUploadDialog(bg)} className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20" title="Upload gambar plat">
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        onClick={() => openUploadDialog(bg)}
+                        className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
+                        title="Upload gambar plat"
+                      >
                         <Upload className="h-3.5 w-3.5" />
                       </Button>
                     )}
-                    <Button variant="ghost" size="icon-xs" onClick={() => openEditDialog(bg)} className="text-slate-400 hover:text-white hover:bg-slate-800">
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => openEditDialog(bg)}
+                      className="text-slate-400 hover:text-white hover:bg-slate-800"
+                    >
                       <Pencil className="h-3.5 w-3.5" />
                     </Button>
                     {userRole === "admin" && (
-                      <Button variant="ghost" size="icon-xs" onClick={() => openDeleteDialog(bg)} className="text-red-400 hover:text-red-300 hover:bg-red-900/20">
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        onClick={() => openDeleteDialog(bg)}
+                        className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                      >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     )}
@@ -353,12 +396,17 @@ export function BackgroundClient({ backgrounds, userRole }: Props) {
                       <CheckCircle className="mr-1 h-3 w-3" /> Gambar Tersedia
                     </Badge>
                   ) : (
-                    <Badge variant="outline" className="text-xs text-slate-500 border-slate-700">
+                    <Badge
+                      variant="outline"
+                      className="text-xs text-slate-500 border-slate-700"
+                    >
                       Belum ada gambar
                     </Badge>
                   )}
                 </div>
-                <p className="mt-1 text-xs text-slate-600">{formatDate(bg.createdAt)}</p>
+                <p className="mt-1 text-xs text-slate-600">
+                  {formatDate(bg.createdAt)}
+                </p>
               </CardContent>
             </Card>
           ))}
@@ -369,11 +417,14 @@ export function BackgroundClient({ backgrounds, userRole }: Props) {
       <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
         <DialogContent className="border-slate-800 bg-slate-900 text-white sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-white">Upload Gambar Plat — {selectedBg?.name}</DialogTitle>
+            <DialogTitle className="text-white">
+              Upload Gambar Plat — {selectedBg?.name}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <p className="text-sm text-slate-400">
-              Upload gambar plat/background (.png direkomendasikan untuk transparansi).
+              Upload gambar plat/background (.png direkomendasikan untuk
+              transparansi).
             </p>
             <div
               className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-700 bg-slate-800/50 overflow-hidden cursor-pointer hover:border-purple-500/50 hover:bg-slate-800 transition-colors"
@@ -382,14 +433,24 @@ export function BackgroundClient({ backgrounds, userRole }: Props) {
               {previewUrl ? (
                 <div className="relative w-full">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={previewUrl} alt="Preview" className="h-40 w-full object-contain p-2" />
-                  <p className="pb-2 text-center text-xs text-slate-400">Klik untuk ganti</p>
+                  <img
+                    src={previewUrl}
+                    alt="Preview"
+                    className="h-40 w-full object-contain p-2"
+                  />
+                  <p className="pb-2 text-center text-xs text-slate-400">
+                    Klik untuk ganti
+                  </p>
                 </div>
               ) : (
                 <div className="flex flex-col items-center p-8">
                   <Upload className="h-10 w-10 text-slate-500 mb-2" />
-                  <p className="text-sm text-slate-400">Klik untuk pilih gambar plat</p>
-                  <p className="text-xs text-slate-500 mt-1">.png, .jpg, .jpeg, .webp</p>
+                  <p className="text-sm text-slate-400">
+                    Klik untuk pilih gambar plat
+                  </p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    .png, .jpg, .jpeg, .webp
+                  </p>
                 </div>
               )}
               <input
@@ -407,11 +468,27 @@ export function BackgroundClient({ backgrounds, userRole }: Props) {
             )}
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setUploadDialogOpen(false)} className="border-slate-700 text-slate-300 hover:bg-slate-800">
+            <Button
+              variant="outline"
+              onClick={() => setUploadDialogOpen(false)}
+              className="border-slate-700 text-slate-300 hover:bg-slate-800"
+            >
               Batal
             </Button>
-            <Button onClick={handleUploadBackground} disabled={uploadLoading || !selectedFile}>
-              {uploadLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Mengupload...</> : <><Upload className="mr-2 h-4 w-4" /> Upload</>}
+            <Button
+              onClick={handleUploadBackground}
+              disabled={uploadLoading || !selectedFile}
+            >
+              {uploadLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
+                  Mengupload...
+                </>
+              ) : (
+                <>
+                  <Upload className="mr-2 h-4 w-4" /> Upload
+                </>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -428,7 +505,12 @@ export function BackgroundClient({ backgrounds, userRole }: Props) {
               <Label htmlFor="editBgName" className="text-slate-300">
                 Nama Background <span className="text-red-400">*</span>
               </Label>
-              <Input id="editBgName" value={editBgName} onChange={(e) => setEditBgName(e.target.value)} className="border-slate-700 bg-slate-800 text-white" />
+              <Input
+                id="editBgName"
+                value={editBgName}
+                onChange={(e) => setEditBgName(e.target.value)}
+                className="border-slate-700 bg-slate-800 text-white"
+              />
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">Warna Font</Label>
@@ -444,14 +526,29 @@ export function BackgroundClient({ backgrounds, userRole }: Props) {
                   onChange={(e) => setEditBgFontColor(e.target.value)}
                   className="border-slate-700 bg-slate-800 text-white"
                 />
-                <div className="h-10 w-10 rounded-md border border-slate-600 flex-shrink-0" style={{ backgroundColor: editBgFontColor }} />
+                <div
+                  className="h-10 w-10 rounded-md border border-slate-600 flex-shrink-0"
+                  style={{ backgroundColor: editBgFontColor }}
+                />
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditDialogOpen(false)} className="border-slate-700 text-slate-300 hover:bg-slate-800">Batal</Button>
+            <Button
+              variant="outline"
+              onClick={() => setEditDialogOpen(false)}
+              className="border-slate-700 text-slate-300 hover:bg-slate-800"
+            >
+              Batal
+            </Button>
             <Button onClick={handleEdit} disabled={formLoading}>
-              {formLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menyimpan...</> : "Simpan Perubahan"}
+              {formLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menyimpan...
+                </>
+              ) : (
+                "Simpan Perubahan"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -465,12 +562,29 @@ export function BackgroundClient({ backgrounds, userRole }: Props) {
           </DialogHeader>
           <p className="text-slate-300">
             Apakah Anda yakin ingin menghapus background{" "}
-            <span className="font-semibold text-white">{selectedBg?.name}</span>?
+            <span className="font-semibold text-white">{selectedBg?.name}</span>
+            ?
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)} className="border-slate-700 text-slate-300 hover:bg-slate-800">Batal</Button>
-            <Button variant="destructive" onClick={handleDelete} disabled={formLoading}>
-              {formLoading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menghapus...</> : "Hapus"}
+            <Button
+              variant="outline"
+              onClick={() => setDeleteDialogOpen(false)}
+              className="border-slate-700 text-slate-300 hover:bg-slate-800"
+            >
+              Batal
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={formLoading}
+            >
+              {formLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menghapus...
+                </>
+              ) : (
+                "Hapus"
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

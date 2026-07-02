@@ -140,7 +140,7 @@ export function BackgroundClient({ backgrounds, userRole }: Props) {
   const openUploadDialog = (bg: Background) => {
     setSelectedBg(bg);
     setSelectedFile(null);
-    setPreviewUrl(bg.imagePath ? `/api/backgrounds/${bg.id}/image` : null);
+    setPreviewUrl(bg.imagePath ? `/api/backgrounds/${bg.id}` : null);
     setUploadDialogOpen(true);
   };
 
@@ -326,7 +326,7 @@ export function BackgroundClient({ backgrounds, userRole }: Props) {
                 <div className="h-24 w-full overflow-hidden bg-slate-800">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={`/api/backgrounds/${bg.id}/image`}
+                    src={`/api/backgrounds/${bg.id}`}
                     alt={bg.name}
                     className="h-full w-full object-cover"
                   />
@@ -422,10 +422,13 @@ export function BackgroundClient({ backgrounds, userRole }: Props) {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            <p className="text-sm text-slate-400">
-              Upload gambar plat/background (.png direkomendasikan untuk
-              transparansi).
-            </p>
+            <div className="rounded-md bg-blue-500/10 p-3 border border-blue-500/20">
+              <p className="text-sm text-blue-400 font-medium">Panduan Upload:</p>
+              <ul className="text-xs text-slate-300 list-disc list-inside mt-1 space-y-0.5">
+                <li>Gunakan format <strong>.png</strong> yang transparan (tanpa warna latar).</li>
+                <li>Rasio desain harus sesuai dengan ukuran label Anda (contoh 5cm x 1.4cm).</li>
+              </ul>
+            </div>
             <div
               className="flex flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-700 bg-slate-800/50 overflow-hidden cursor-pointer hover:border-purple-500/50 hover:bg-slate-800 transition-colors"
               onClick={() => fileInputRef.current?.click()}

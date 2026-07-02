@@ -91,7 +91,8 @@ async function loadBackgroundImage(imgPath: string): Promise<Image | null> {
       : path.join(BACKGROUNDS_DIR, imgPath);
     if (!fs.existsSync(absPath)) return null;
     return await loadImage(absPath);
-  } catch {
+  } catch (err) {
+    console.error(`[LOAD_BACKGROUND] Failed to load image at ${imgPath}:`, err);
     return null;
   }
 }
@@ -157,13 +158,13 @@ async function drawLabel(
   ctx.fillStyle = fontColor;
 
   while (fontSize > minFontPx) {
-    ctx.font = `bold ${fontSize}px "${fontFamily}", "Arial"`;
+    ctx.font = `bold ${fontSize}px "${fontFamily}", Arial`;
     const m = ctx.measureText(name);
     if (m.width <= maxTextWidth) break;
     fontSize -= 1;
   }
 
-  ctx.font = `bold ${fontSize}px "${fontFamily}", "Arial"`;
+  ctx.font = `bold ${fontSize}px "${fontFamily}", Arial`;
   const measured = ctx.measureText(name);
   const textX = (labelW - measured.width) / 2;
   const textY = labelH / 2;

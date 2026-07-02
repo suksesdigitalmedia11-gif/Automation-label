@@ -284,7 +284,7 @@ export function RollClient({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="quantity" className="text-slate-300">
-                  Quantity <span className="text-red-400">*</span>
+                  Quantity (Estimasi Halaman) <span className="text-red-400">*</span>
                 </Label>
                 <Input
                   id="quantity"
@@ -293,6 +293,7 @@ export function RollClient({
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
                   className="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500"
+                  title="Total estimasi halaman pada satu roll kertas"
                 />
               </div>
               <div className="space-y-2">

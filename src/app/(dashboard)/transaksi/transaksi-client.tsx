@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -597,6 +597,19 @@ export function TransaksiClient({
         </Button>
       </div>
 
+      {/* Guide Banner */}
+      <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 p-4">
+        <h2 className="text-sm font-semibold text-blue-400 flex items-center gap-2 mb-2">
+          <FileText className="h-4 w-4" /> Panduan Penggunaan
+        </h2>
+        <ol className="list-decimal list-inside text-xs text-slate-300 space-y-1">
+          <li><strong>Siapkan Material:</strong> Pastikan Anda sudah mengupload desain background (.png) di menu <em>Background</em>.</li>
+          <li><strong>Buat Roll:</strong> Tambahkan nama tipe Roll/Kertas di menu <em>Roll</em>.</li>
+          <li><strong>Input Transaksi:</strong> Klik <em>Tambah Transaksi</em>, lalu masukkan daftar nama customer (bisa via Import Excel/Text).</li>
+          <li><strong>Generate:</strong> Klik icon tongkat sihir (<Wand2 className="inline h-3 w-3 text-purple-400 mx-0.5" />) di tabel untuk memproses PNG siap cetak.</li>
+        </ol>
+      </div>
+
       {/* Filter Bar */}
       <Card className="border-slate-800 bg-slate-900">
         <CardContent className="pt-4">
@@ -866,7 +879,7 @@ export function TransaksiClient({
             <div className="grid grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label className="text-slate-300">
-                  Roll <span className="text-red-400">*</span>
+                  Pilih Roll Kertas <span className="text-red-400">*</span>
                 </Label>
                 <Select
                   value={createRollId}
@@ -896,13 +909,14 @@ export function TransaksiClient({
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-slate-300">Jumlah Cetakan</Label>
+                <Label className="text-slate-300">Copy (Jumlah per Halaman)</Label>
                 <Input
                   type="number"
                   min={1}
                   value={createQty}
                   onChange={(e) => setCreateQty(e.target.value)}
                   className="border-slate-700 bg-slate-800 text-white"
+                  title="Berapa banyak salinan halaman yang sama ingin dicetak"
                 />
               </div>
             </div>

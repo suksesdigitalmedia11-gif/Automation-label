@@ -90,6 +90,7 @@ const formatDate = (d: string) =>
 interface Roll {
   id: string;
   rollName: string;
+  path?: string | null;
 }
 interface Font {
   id: string;
@@ -724,9 +725,9 @@ export function TransaksiClient({
                     </TableCell>
                     <TableCell>{statusBadge(tx.status)}</TableCell>
                     <TableCell>
-                      {tx.path ? (
+                      {(tx.roll?.path || tx.path) ? (
                         <a
-                          href={tx.path}
+                          href={(tx.roll?.path || tx.path) as string}
                           target="_blank"
                           rel="noopener noreferrer"
                         >

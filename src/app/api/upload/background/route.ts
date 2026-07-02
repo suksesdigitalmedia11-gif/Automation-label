@@ -5,7 +5,9 @@ import path from "path";
 import fs from "fs";
 
 const ALLOWED_EXTS = [".png", ".jpg", ".jpeg", ".webp"];
-const BG_DIR = path.join(process.cwd(), "public", "backgrounds");
+const BG_DIR = process.env.VERCEL
+  ? path.join("/tmp", "backgrounds")
+  : path.join(process.cwd(), "public", "backgrounds");
 const MAX_SIZE = 20 * 1024 * 1024; // 20MB
 
 export async function POST(request: NextRequest) {
@@ -22,14 +24,14 @@ export async function POST(request: NextRequest) {
     if (!file || !backgroundId) {
       return NextResponse.json(
         { error: "File dan backgroundId wajib diisi" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (file.size > MAX_SIZE) {
       return NextResponse.json(
         { error: "Ukuran file maksimal 20MB" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -37,7 +39,7 @@ export async function POST(request: NextRequest) {
     if (!ALLOWED_EXTS.includes(ext)) {
       return NextResponse.json(
         { error: "Format file harus .png, .jpg, .jpeg, atau .webp" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -47,7 +49,7 @@ export async function POST(request: NextRequest) {
     if (!bg) {
       return NextResponse.json(
         { error: "Background tidak ditemukan" },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
@@ -74,7 +76,7 @@ export async function POST(request: NextRequest) {
     console.error("[UPLOAD_BACKGROUND]", err);
     return NextResponse.json(
       { error: "Terjadi kesalahan saat upload" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

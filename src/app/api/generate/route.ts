@@ -5,8 +5,12 @@ import { generateLabels } from "@/lib/label-generator";
 import path from "path";
 import fs from "fs";
 
-const FONTS_DIR = path.join(process.cwd(), "public", "fonts");
-const BG_DIR = path.join(process.cwd(), "public", "backgrounds");
+const FONTS_DIR = process.env.VERCEL
+  ? path.join("/tmp", "fonts")
+  : path.join(process.cwd(), "public", "fonts");
+const BG_DIR = process.env.VERCEL
+  ? path.join("/tmp", "backgrounds")
+  : path.join(process.cwd(), "public", "backgrounds");
 
 export async function POST(request: NextRequest) {
   const session = await auth();

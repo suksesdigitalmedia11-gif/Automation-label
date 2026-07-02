@@ -5,7 +5,9 @@ import path from "path";
 import fs from "fs";
 
 const ALLOWED_EXTS = [".ttf", ".otf", ".woff", ".woff2"];
-const FONTS_DIR = path.join(process.cwd(), "public", "fonts");
+const FONTS_DIR = process.env.VERCEL
+  ? path.join("/tmp", "fonts")
+  : path.join(process.cwd(), "public", "fonts");
 const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
 export async function POST(request: NextRequest) {
@@ -23,14 +25,14 @@ export async function POST(request: NextRequest) {
     if (!file || !fontId) {
       return NextResponse.json(
         { error: "File dan fontId wajib diisi" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (file.size > MAX_SIZE) {
       return NextResponse.json(
         { error: "Ukuran file maksimal 10MB" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -38,7 +40,7 @@ export async function POST(request: NextRequest) {
     if (!ALLOWED_EXTS.includes(ext)) {
       return NextResponse.json(
         { error: "Format file harus .ttf, .otf, .woff, atau .woff2" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -47,7 +49,10 @@ export async function POST(request: NextRequest) {
       where: { id: fontId },
     });
     if (!font) {
-      return NextResponse.json({ error: "Font tidak ditemukan" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Font tidak ditemukan" },
+        { status: 404 },
+      );
     }
 
     // Ensure directory
@@ -79,7 +84,7 @@ export async function POST(request: NextRequest) {
     console.error("[UPLOAD_FONT]", err);
     return NextResponse.json(
       { error: "Terjadi kesalahan saat upload" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

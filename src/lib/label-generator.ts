@@ -34,8 +34,12 @@ import {
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
-const FONTS_DIR = path.join(process.cwd(), "public", "fonts");
-const BACKGROUNDS_DIR = path.join(process.cwd(), "public", "backgrounds");
+const FONTS_DIR = process.env.VERCEL
+  ? path.join("/tmp", "fonts")
+  : path.join(process.cwd(), "public", "fonts");
+const BACKGROUNDS_DIR = process.env.VERCEL
+  ? path.join("/tmp", "backgrounds")
+  : path.join(process.cwd(), "public", "backgrounds");
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

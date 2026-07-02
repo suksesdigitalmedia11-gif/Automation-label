@@ -179,6 +179,13 @@ export async function generateLabels(
 
   // Pre-register all fonts and cache all backgrounds
   const allDetails = transactions.flatMap((t) => t.details);
+
+  // Register Default Resi Font (Montserrat)
+  const montserratPath = path.join(process.cwd(), "public", "fonts", "Montserrat-Bold.ttf");
+  let resiFontFamily = "Arial";
+  if (fs.existsSync(montserratPath)) {
+      resiFontFamily = ensureFontRegistered("MontserratResi", montserratPath);
+  }
   
   for (const d of allDetails) {
     if (d.fontFilePath && d.fontFileBase64) {
@@ -283,9 +290,9 @@ export async function generateLabels(
       // Vertical text: limits are PAKET_HEIGHT_PX (length) and BARCODE_WIDTH_PX (height/thickness)
       const resiFontSize = Math.min(250, Math.round(BARCODE_WIDTH_PX * 0.4));
       
-      // Use the first label's font as fallback in case Arial is missing (e.g., on Vercel)
-      const fallbackFont = tx.packets[0]?.[0]?.fontFamily || "Arial";
-      ctx.font = `bold ${resiFontSize}px "${fallbackFont}", Arial, sans-serif`;
+      // Use Montserrat for the resi font, fallback to the label's font if not found, then Arial
+      const labelFont = tx.packets[0]?.[0]?.fontFamily || "Arial";
+      ctx.font = `bold ${resiFontSize}px "${resiFontFamily}", "${labelFont}", Arial, sans-serif`;
       
       ctx.textBaseline = "middle";
       ctx.textAlign = "center";

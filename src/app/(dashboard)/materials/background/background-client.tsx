@@ -44,6 +44,7 @@ interface Background {
   fontColor: string;
   imagePath: string | null;
   createdAt: string;
+  updatedAt: string;
 }
 
 interface Props {
@@ -140,7 +141,7 @@ export function BackgroundClient({ backgrounds, userRole }: Props) {
   const openUploadDialog = (bg: Background) => {
     setSelectedBg(bg);
     setSelectedFile(null);
-    setPreviewUrl(bg.imagePath ? `/api/backgrounds/${bg.id}` : null);
+    setPreviewUrl(bg.imagePath ? `/api/backgrounds/${bg.id}?t=${Date.now()}` : null);
     setUploadDialogOpen(true);
   };
 
@@ -326,7 +327,7 @@ export function BackgroundClient({ backgrounds, userRole }: Props) {
                 <div className="h-24 w-full overflow-hidden bg-slate-800">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={`/backgrounds/${bg.imagePath}`}
+                    src={`/api/backgrounds/${bg.id}?t=${new Date(bg.updatedAt).getTime()}`}
                     alt={bg.name}
                     className="h-full w-full object-cover"
                   />

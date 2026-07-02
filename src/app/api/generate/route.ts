@@ -19,79 +19,86 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { transactionId } = await request.json();
-    if (!transactionId) {
+    const { rollId } = await request.json();
+    if (!rollId) {
       return NextResponse.json(
-        { error: "transactionId wajib diisi" },
+        { error: "rollId wajib diisi" },
         { status: 400 },
       );
     }
 
-    // Load transaction with all details
-    const tx = await prisma.transaction.findUnique({
-      where: { id: transactionId },
+    const roll = await prisma.roll.findUnique({
+      where: { id: rollId },
       include: {
-        details: {
-          orderBy: { sortOrder: "asc" },
+        transactions: {
+          orderBy: { transactionDate: "asc" },
           include: {
-            font: true,
-            background: true,
+            details: {
+              orderBy: { sortOrder: "asc" },
+              include: { font: true, background: true },
+            },
           },
         },
-        roll: true,
       },
     });
 
-    if (!tx) {
+    if (!roll) {
       return NextResponse.json(
-        { error: "Transaksi tidak ditemukan" },
+        { error: "Roll tidak ditemukan" },
         { status: 404 },
       );
     }
 
-    if (tx.details.length === 0) {
+    if (roll.transactions.length === 0) {
       return NextResponse.json(
-        { error: "Tambahkan minimal 1 detail nama terlebih dahulu" },
+        { error: "Tambahkan minimal 1 transaksi ke dalam roll ini" },
         { status: 400 },
       );
     }
 
-    // Build label detail array for generator (CRE-12: fixed dimensions)
-    const labelDetails = tx.details.map((d) => ({
-      name: d.name,
-      fontFamily: d.font?.fontFamily ?? d.font?.name ?? "Arial",
-      fontFilePath: d.font?.filePath
-        ? path.join(FONTS_DIR, d.font.filePath)
-        : null,
-      backgroundImagePath: d.background?.imagePath
-        ? path.join(BG_DIR, d.background.imagePath)
-        : null,
-      fontColor: d.background?.fontColor ?? "#FFFFFF",
-      quantity: d.quantity,
+    const txData = roll.transactions.map((tx) => ({
+      resiNumber: tx.resiNumber ?? null,
+      details: tx.details.map((d) => ({
+        name: d.name,
+        fontFamily: d.font?.fontFamily ?? d.font?.name ?? "Arial",
+        fontFilePath: d.font?.filePath
+          ? path.join(FONTS_DIR, d.font.filePath)
+          : null,
+        backgroundImagePath: d.background?.imagePath
+          ? path.join(BG_DIR, d.background.imagePath)
+          : null,
+        fontColor: d.background?.fontColor ?? "#FFFFFF",
+        quantity: d.quantity,
+      })),
     }));
 
     // Generate labels with fixed production layout (CRE-12)
     const result = await generateLabels({
-      transactionId,
-      details: labelDetails,
-      resiNumber: tx.resiNumber ?? null,
+      rollId,
+      transactions: txData,
     });
 
     // Read generated PNG and encode as base64 (Vercel /tmp compatible)
     const outputDir = process.env.VERCEL
       ? "/tmp/output"
       : path.join(process.cwd(), "public", "output");
-    const outputFile = path.join(outputDir, transactionId, "output.png");
+    const outputFile = path.join(outputDir, rollId, "output.png");
     const pngBuffer = fs.readFileSync(outputFile);
     const base64 = pngBuffer.toString("base64");
 
-    // Update transaction path and status
-    await prisma.transaction.update({
-      where: { id: transactionId },
+    // Update roll path and status
+    await prisma.roll.update({
+      where: { id: rollId },
       data: {
         path: result.outputPath,
         status: "Completed",
       },
+    });
+
+    // Optionally mark transactions inside as completed
+    await prisma.transaction.updateMany({
+      where: { rollId: rollId },
+      data: { status: "Completed" },
     });
 
     return NextResponse.json({
@@ -120,7 +127,7 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
-  const transactionId = searchParams.get("transactionId");
+  const transactionId = searchParams.get("rollId") || searchParams.get("transactionId");
 
   if (!transactionId) {
     return NextResponse.json(
@@ -129,19 +136,19 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const tx = await prisma.transaction.findUnique({
-    where: { id: transactionId },
+  const roll = await prisma.roll.findUnique({
+    where: { id: transactionId }, // the variable is still named transactionId for backward compatibility from the GET param, but it's now rollId
     select: { path: true, status: true },
   });
 
-  if (!tx || !tx.path) {
+  if (!roll || !roll.path) {
     return NextResponse.json({ exists: false });
   }
 
   const absPath = process.env.VERCEL
-    ? path.join("/tmp", tx.path)
-    : path.join(process.cwd(), "public", tx.path);
+    ? path.join("/tmp", roll.path)
+    : path.join(process.cwd(), "public", roll.path);
   const exists = fs.existsSync(absPath);
 
-  return NextResponse.json({ exists, path: tx.path, status: tx.status });
+  return NextResponse.json({ exists, path: roll.path, status: roll.status });
 }

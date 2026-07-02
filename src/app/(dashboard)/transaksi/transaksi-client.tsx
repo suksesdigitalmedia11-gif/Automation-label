@@ -254,20 +254,10 @@ export function TransaksiClient({
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [batchImportOpen, setBatchImportOpen] = useState(false);
 
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [formLoading, setFormLoading] = useState(false);
-  const [generateLoading, setGenerateLoading] = useState(false);
-
-  // Generate result
-  const [generateResult, setGenerateResult] = useState<{
-    outputPath: string;
-    totalLabels: number;
-    totalPages: number;
-    base64: string;
-  } | null>(null);
 
   // Create form
   const [createRollId, setCreateRollId] = useState("");
@@ -523,39 +513,7 @@ export function TransaksiClient({
     }
   };
 
-  // ─── Generate Handler ────────────────────────────────────────────────────
 
-  const openGenerateDialog = (tx: Transaction) => {
-    setSelectedTx(tx);
-    setGenerateResult(null);
-    setGenerateDialogOpen(true);
-  };
-
-  const handleGenerate = async () => {
-    if (!selectedTx) return;
-    setGenerateLoading(true);
-    try {
-      const res = await fetch("/api/generate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ transactionId: selectedTx.id }),
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) {
-        toast.error(data.error || "Gagal generate label");
-        return;
-      }
-      setGenerateResult(data);
-      toast.success(
-        `Label berhasil di-generate! ${data.totalLabels} label, ${data.totalPages} halaman`,
-      );
-      router.refresh();
-    } catch {
-      toast.error("Terjadi kesalahan saat generate");
-    } finally {
-      setGenerateLoading(false);
-    }
-  };
 
   // ─── Batch Import ─────────────────────────────────────────────────────────
 
@@ -782,15 +740,6 @@ export function TransaksiClient({
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          onClick={() => openGenerateDialog(tx)}
-                          className="text-purple-400 hover:text-purple-300 hover:bg-purple-900/20"
-                          title="Generate Label"
-                        >
-                          <Wand2 className="h-3.5 w-3.5" />
-                        </Button>
                         <Button
                           variant="ghost"
                           size="icon-xs"
@@ -1182,105 +1131,7 @@ export function TransaksiClient({
         </DialogContent>
       </Dialog>
 
-      {/* ─── Generate Dialog ──────────────────────────────────────────────────── */}
-      <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
-        <DialogContent className="border-slate-800 bg-slate-900 text-white sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle className="text-white flex items-center gap-2">
-              <Wand2 className="h-5 w-5 text-purple-400" /> Generate Label
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            {!generateResult ? (
-              <>
-                <div className="rounded-xl border border-slate-800 bg-slate-800/50 p-4 space-y-2">
-                  <p className="text-sm text-slate-300">
-                    <span className="font-medium text-white">Roll:</span>{" "}
-                    {selectedTx?.roll.rollName}
-                  </p>
-                  <p className="text-sm text-slate-300">
-                    <span className="font-medium text-white">Ukuran:</span> 5cm
-                    × 1,4cm (fixed)
-                  </p>
-                  <p className="text-sm text-slate-300">
-                    <span className="font-medium text-white">Detail Nama:</span>{" "}
-                    {selectedTx?.numberOfDetails ?? 0} nama
-                  </p>
-                </div>
-                {(!selectedTx?.numberOfDetails ||
-                  selectedTx.numberOfDetails === 0) && (
-                  <div className="rounded-lg bg-yellow-500/10 border border-yellow-500/20 p-3 text-sm text-yellow-400">
-                    ⚠️ Transaksi ini belum memiliki detail nama. Edit transaksi
-                    terlebih dahulu untuk menambahkan nama.
-                  </div>
-                )}
-                <p className="text-sm text-slate-400">
-                  Sistem akan me-render semua label sesuai font dan background
-                  yang dipilih, lalu menghasilkan file PNG beresolusi 300 DPI
-                  siap cetak.
-                </p>
-                <Button
-                  onClick={handleGenerate}
-                  disabled={generateLoading || !selectedTx?.numberOfDetails}
-                  className="w-full bg-purple-600 hover:bg-purple-700"
-                >
-                  {generateLoading ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sedang
-                      Generate...
-                    </>
-                  ) : (
-                    <>
-                      <Wand2 className="mr-2 h-4 w-4" /> Generate Sekarang
-                    </>
-                  )}
-                </Button>
-              </>
-            ) : (
-              <div className="space-y-4">
-                <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 space-y-2">
-                  <p className="text-green-400 font-semibold flex items-center gap-2">
-                    ✅ Label Berhasil Di-generate!
-                  </p>
-                  <p className="text-sm text-slate-300">
-                    Total Label:{" "}
-                    <span className="text-white font-medium">
-                      {generateResult.totalLabels}
-                    </span>
-                  </p>
-                  <p className="text-sm text-slate-300">
-                    Total Halaman:{" "}
-                    <span className="text-white font-medium">
-                      {generateResult.totalPages}
-                    </span>
-                  </p>
-                </div>
-                <Button
-                  className="w-full bg-green-600 hover:bg-green-700"
-                  onClick={() => {
-                    if (!generateResult?.base64) return;
-                    const link = document.createElement("a");
-                    link.href = `data:image/png;base64,${generateResult.base64}`;
-                    link.download = `label_${selectedTx?.id?.slice(0, 8) ?? "output"}.png`;
-                    link.click();
-                  }}
-                >
-                  <Download className="mr-2 h-4 w-4" /> Download PNG
-                </Button>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setGenerateDialogOpen(false)}
-              className="border-slate-700 text-slate-300 hover:bg-slate-800"
-            >
-              Tutup
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+
 
       {/* ─── Batch Import Dialog ──────────────────────────────────────────────── */}
       <Dialog open={batchImportOpen} onOpenChange={setBatchImportOpen}>

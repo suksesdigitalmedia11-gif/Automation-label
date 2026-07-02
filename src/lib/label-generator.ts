@@ -9,7 +9,6 @@ import {
 } from "@napi-rs/canvas";
 import path from "path";
 import fs from "fs";
-import bwipjs from "bwip-js";
 
 import {
   MEDIA_WIDTH_PX,
@@ -52,10 +51,14 @@ export interface LabelDetail {
   quantity: number;
 }
 
-export interface GenerateOptions {
-  transactionId: string;
+export interface TransactionData {
+  resiNumber: string | null;
   details: LabelDetail[];
-  resiNumber?: string | null;
+}
+
+export interface GenerateOptions {
+  rollId: string;
+  transactions: TransactionData[];
 }
 
 export interface GenerateResult {
@@ -104,35 +107,7 @@ async function loadBackgroundImage(imgPath: string): Promise<Image | null> {
   }
 }
 
-async function generateBarcodeImage(
-  text: string,
-  widthPx: number,
-  heightPx: number,
-): Promise<Image> {
-  const buffer = await bwipjs.toBuffer({
-    bcid: "code128",
-    text,
-    scale: 3,
-    height: Math.round(heightPx / 3),
-    width: Math.round(widthPx / 3),
-    includetext: true,
-    textxalign: "center",
-  });
-  // @napi-rs/canvas loadImage doesn't accept raw bwip-js buffer directly.
-  // Write to a temp file first, then load.
-  const tmpDir = path.join(OUTPUT_DIR, ".tmp");
-  fs.mkdirSync(tmpDir, { recursive: true });
-  const tmpPath = path.join(
-    tmpDir,
-    `barcode_${Date.now()}_${Math.random().toString(36).slice(2)}.png`,
-  );
-  fs.writeFileSync(tmpPath, buffer);
-  try {
-    return await loadImage(tmpPath);
-  } finally {
-    fs.unlinkSync(tmpPath);
-  }
-}
+// Removed generateBarcodeImage
 
 async function drawLabel(
   ctx: ReturnType<Canvas["getContext"]>,
@@ -185,7 +160,7 @@ async function drawLabel(
 export async function generateLabels(
   opts: GenerateOptions,
 ): Promise<GenerateResult> {
-  const { transactionId, details, resiNumber } = opts;
+  const { rollId, transactions } = opts;
 
   interface LabelCell {
     name: string;
@@ -195,14 +170,22 @@ export async function generateLabels(
     bgFallback: string;
   }
 
-  for (const d of details) {
+  interface TransactionPack {
+    resiNumber: string;
+    packets: LabelCell[][];
+  }
+
+  // Pre-register all fonts and cache all backgrounds
+  const allDetails = transactions.flatMap((t) => t.details);
+  
+  for (const d of allDetails) {
     if (d.fontFamily && d.fontFilePath) {
       d.fontFamily = ensureFontRegistered(d.fontFamily, d.fontFilePath);
     }
   }
 
   const bgCache = new Map<string, Image | null>();
-  for (const d of details) {
+  for (const d of allDetails) {
     if (d.backgroundImagePath && !bgCache.has(d.backgroundImagePath)) {
       bgCache.set(
         d.backgroundImagePath,
@@ -211,48 +194,52 @@ export async function generateLabels(
     }
   }
 
-  const queue: LabelCell[] = [];
-  for (const d of details) {
-    const fontFamily = d.fontFamily || "Arial";
-    const fontColor = d.fontColor || "#FFFFFF";
-    const bgImage = d.backgroundImagePath
-      ? (bgCache.get(d.backgroundImagePath) ?? null)
-      : null;
-    const bgFallback =
-      fontColor === "#FFFFFF" || fontColor.toLowerCase() === "#ffffff"
-        ? FALLBACK_DARK_BG
-        : FALLBACK_LIGHT_BG;
-
-    for (let i = 0; i < d.quantity; i++) {
-      queue.push({ name: d.name, fontFamily, fontColor, bgImage, bgFallback });
-    }
-  }
-
-  if (queue.length === 0) {
-    throw new Error("Tidak ada label untuk di-generate");
-  }
-
   const labelsPerPaket = LABELS_PER_ROW * LABELS_PER_PACK;
-  const totalPackets = Math.ceil(queue.length / labelsPerPaket);
+  const transactionPacks: TransactionPack[] = [];
+  let totalPackets = 0;
+
+  for (const tx of transactions) {
+    const queue: LabelCell[] = [];
+    for (const d of tx.details) {
+      const fontFamily = d.fontFamily || "Arial";
+      const fontColor = d.fontColor || "#FFFFFF";
+      const bgImage = d.backgroundImagePath
+        ? (bgCache.get(d.backgroundImagePath) ?? null)
+        : null;
+      const bgFallback =
+        fontColor === "#FFFFFF" || fontColor.toLowerCase() === "#ffffff"
+          ? FALLBACK_DARK_BG
+          : FALLBACK_LIGHT_BG;
+
+      for (let i = 0; i < d.quantity; i++) {
+        queue.push({ name: d.name, fontFamily, fontColor, bgImage, bgFallback });
+      }
+    }
+
+    if (queue.length === 0) continue;
+
+    const txPacketsCount = Math.ceil(queue.length / labelsPerPaket);
+    const packets: LabelCell[][] = [];
+    for (let p = 0; p < txPacketsCount; p++) {
+      packets.push(queue.slice(p * labelsPerPaket, (p + 1) * labelsPerPaket));
+    }
+
+    transactionPacks.push({
+      resiNumber: tx.resiNumber?.trim() || "-",
+      packets,
+    });
+    totalPackets += txPacketsCount;
+  }
+
+  if (totalPackets === 0) {
+    throw new Error("Tidak ada label untuk di-generate dalam roll ini");
+  }
 
   const canvasW = MEDIA_WIDTH_PX;
   const canvasH =
     totalPackets * PAKET_HEIGHT_PX + (totalPackets - 1) * GAP_ANTAR_PAKET_PX;
 
-  let barcodeImg: Image | null = null;
-  if (resiNumber && resiNumber.trim()) {
-    try {
-      barcodeImg = await generateBarcodeImage(
-        resiNumber.trim(),
-        BARCODE_WIDTH_PX,
-        PAKET_HEIGHT_PX,
-      );
-    } catch (err) {
-      console.error("[LABEL-GEN] Failed to generate barcode:", err);
-    }
-  }
-
-  const txOutDir = path.join(OUTPUT_DIR, transactionId);
+  const txOutDir = path.join(OUTPUT_DIR, rollId);
   fs.mkdirSync(txOutDir, { recursive: true });
 
   const canvas = createCanvas(canvasW, canvasH);
@@ -262,20 +249,43 @@ export async function generateLabels(
   ctx.fillRect(0, 0, canvasW, canvasH);
 
   const labelGridStartX = BARCODE_WIDTH_PX;
+  let currentPacketIndex = 0;
 
-  for (let pktIdx = 0; pktIdx < totalPackets; pktIdx++) {
-    const pktY = pktIdx * (PAKET_HEIGHT_PX + GAP_ANTAR_PAKET_PX);
+  for (const tx of transactionPacks) {
+    for (const packet of tx.packets) {
+      const pktY = currentPacketIndex * (PAKET_HEIGHT_PX + GAP_ANTAR_PAKET_PX);
 
-    if (barcodeImg) {
-      ctx.drawImage(barcodeImg, 0, pktY, BARCODE_WIDTH_PX, PAKET_HEIGHT_PX);
-    }
+      // Draw Resi text on the left area (vertically centered in the packet area)
+      ctx.save();
+      ctx.fillStyle = "#000000";
+      // Determine font size based on BARCODE_WIDTH_PX but keep it reasonable
+      const resiFontSize = Math.min(60, Math.round(BARCODE_WIDTH_PX * 0.15));
+      ctx.font = `bold ${resiFontSize}px Arial, sans-serif`;
+      ctx.textBaseline = "middle";
+      ctx.textAlign = "center";
+      
+      const resiTextX = BARCODE_WIDTH_PX / 2;
+      const resiTextY = pktY + (PAKET_HEIGHT_PX / 2);
+      
+      // If resi text is very long, we might need to wrap it or draw it rotated, 
+      // but horizontal is easier if it fits. Let's just print it horizontally and let it squish/clip slightly if needed, 
+      // but usually resi fits in 6.65cm. We can also do multi-line if we split by space.
+      // We will just scale text to fit horizontally if it's too wide.
+      const m = ctx.measureText(tx.resiNumber);
+      if (m.width > BARCODE_WIDTH_PX * 0.9) {
+          ctx.fillText(tx.resiNumber, resiTextX, resiTextY, BARCODE_WIDTH_PX * 0.9);
+      } else {
+          ctx.fillText(tx.resiNumber, resiTextX, resiTextY);
+      }
+      ctx.restore();
 
-    for (let row = 0; row < LABELS_PER_PACK; row++) {
-      for (let col = 0; col < LABELS_PER_ROW; col++) {
-        const cellIdx = pktIdx * labelsPerPaket + row * LABELS_PER_ROW + col;
-        if (cellIdx >= queue.length) break;
 
-        const cell = queue[cellIdx];
+      for (let row = 0; row < LABELS_PER_PACK; row++) {
+        for (let col = 0; col < LABELS_PER_ROW; col++) {
+          const cellIdx = row * LABELS_PER_ROW + col;
+          if (cellIdx >= packet.length) break;
+
+          const cell = packet[cellIdx];
         const lx =
           labelGridStartX + col * (LABEL_WIDTH_PX + SPACING_HORIZONTAL_PX);
         const ly = pktY + row * (LABEL_HEIGHT_PX + SPACING_VERTICAL_PX);
@@ -292,7 +302,9 @@ export async function generateLabels(
           cell.bgImage,
           cell.bgFallback,
         );
+        }
       }
+      currentPacketIndex++;
     }
   }
 
@@ -301,8 +313,8 @@ export async function generateLabels(
   fs.writeFileSync(path.join(txOutDir, pageFile), buffer);
 
   return {
-    outputPath: `/output/${transactionId}/${pageFile}`,
-    totalLabels: queue.length,
+    outputPath: `/output/${rollId}/${pageFile}`,
+    totalLabels: transactionPacks.reduce((sum, tx) => sum + tx.packets.reduce((s, p) => s + p.length, 0), 0),
     totalPages: 1,
   };
 }

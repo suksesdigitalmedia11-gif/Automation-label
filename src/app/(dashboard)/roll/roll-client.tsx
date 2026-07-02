@@ -51,6 +51,9 @@ import {
   Trash2,
   Loader2,
   ScrollText,
+  Wand2,
+  Eye,
+  Download,
 } from "lucide-react";
 import { createRoll, updateRoll, deleteRoll } from "@/actions/roll-actions";
 
@@ -117,6 +120,16 @@ export function RollClient({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRoll, setSelectedRoll] = useState<Roll | null>(null);
   const [formLoading, setFormLoading] = useState(false);
+
+  // Generate state
+  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
+  const [generateLoading, setGenerateLoading] = useState(false);
+  const [generateResult, setGenerateResult] = useState<{
+    outputPath: string;
+    totalLabels: number;
+    totalPages: number;
+    base64?: string;
+  } | null>(null);
 
   // Create form state
   const [rollName, setRollName] = useState("");
@@ -236,6 +249,38 @@ export function RollClient({
       toast.error("Terjadi kesalahan");
     } finally {
       setFormLoading(false);
+    }
+  };
+
+  const openGenerateDialog = (roll: Roll) => {
+    setSelectedRoll(roll);
+    setGenerateResult(null);
+    setGenerateDialogOpen(true);
+  };
+
+  const handleGenerate = async () => {
+    if (!selectedRoll) return;
+    setGenerateLoading(true);
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rollId: selectedRoll.id }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        toast.error(data.error || "Gagal generate label");
+        return;
+      }
+      setGenerateResult(data);
+      toast.success(
+        `Label berhasil di-generate! ${data.totalLabels} label`,
+      );
+      router.refresh();
+    } catch {
+      toast.error("Terjadi kesalahan saat generate");
+    } finally {
+      setGenerateLoading(false);
     }
   };
 
@@ -405,7 +450,25 @@ export function RollClient({
                       {formatDate(roll.createdAt)}
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openGenerateDialog(roll)}
+                          className="text-purple-400 hover:text-purple-300 hover:bg-purple-900/20"
+                          title="Generate Label"
+                        >
+                          <Wand2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => router.push(`/transaksi?rollId=${roll.id}`)}
+                          className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
+                          title="Lihat Transaksi"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -558,6 +621,88 @@ export function RollClient({
               ) : (
                 "Simpan Perubahan"
               )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Generate Dialog ──────────────────────────────────────────────────── */}
+      <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
+        <DialogContent className="border-slate-800 bg-slate-900 text-white sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Wand2 className="h-5 w-5 text-purple-400" /> Generate Roll
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {!generateResult ? (
+              <>
+                <div className="rounded-xl border border-slate-800 bg-slate-800/50 p-4 space-y-2">
+                  <p className="text-sm text-slate-300">
+                    <span className="font-medium text-white">Roll:</span>{" "}
+                    {selectedRoll?.rollName}
+                  </p>
+                  <p className="text-sm text-slate-300">
+                    <span className="font-medium text-white">Ukuran:</span> 5cm
+                    × 1,4cm (fixed)
+                  </p>
+                </div>
+                <p className="text-sm text-slate-400">
+                  Sistem akan menarik semua transaksi pada Roll ini dan me-render
+                  keseluruhan label beserta resi secara terpusat menjadi 1 file PNG beresolusi 300 DPI siap cetak.
+                </p>
+                <Button
+                  onClick={handleGenerate}
+                  disabled={generateLoading}
+                  className="w-full bg-purple-600 hover:bg-purple-700"
+                >
+                  {generateLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sedang
+                      Generate...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="mr-2 h-4 w-4" /> Generate Sekarang
+                    </>
+                  )}
+                </Button>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 space-y-2">
+                  <p className="text-green-400 font-semibold flex items-center gap-2">
+                    ✅ Label Berhasil Di-generate!
+                  </p>
+                  <p className="text-sm text-slate-300">
+                    Total Label:{" "}
+                    <span className="text-white font-medium">
+                      {generateResult.totalLabels}
+                    </span>
+                  </p>
+                </div>
+                <Button
+                  className="w-full bg-green-600 hover:bg-green-700"
+                  onClick={() => {
+                    if (!generateResult?.base64) return;
+                    const link = document.createElement("a");
+                    link.href = `data:image/png;base64,${generateResult.base64}`;
+                    link.download = `roll_${selectedRoll?.id?.slice(0, 8) ?? "output"}.png`;
+                    link.click();
+                  }}
+                >
+                  <Download className="mr-2 h-4 w-4" /> Download PNG
+                </Button>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setGenerateDialogOpen(false)}
+              className="border-slate-700 text-slate-300 hover:bg-slate-800"
+            >
+              Tutup
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -326,7 +326,7 @@ export function BackgroundClient({ backgrounds, userRole }: Props) {
                 <div className="h-24 w-full overflow-hidden bg-slate-800">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
-                    src={`/api/backgrounds/${bg.id}`}
+                    src={`/backgrounds/${bg.imagePath}`}
                     alt={bg.name}
                     className="h-full w-full object-cover"
                   />

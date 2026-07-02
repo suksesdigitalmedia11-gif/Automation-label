@@ -175,7 +175,9 @@ function DetailRowInput({
         onValueChange={(v) => onChange(idx, "fontId", v ?? "")}
       >
         <SelectTrigger className="w-36 border-slate-700 bg-slate-800 text-white h-8 text-xs">
-          <SelectValue placeholder="Font..." />
+          <SelectValue placeholder="Font...">
+            {fonts.find((f) => f.id === row.fontId)?.name || "Font..."}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent className="border-slate-700 bg-slate-900 text-white max-h-48">
           {fonts.map((f) => (
@@ -190,7 +192,9 @@ function DetailRowInput({
         onValueChange={(v) => onChange(idx, "backgroundId", v ?? "")}
       >
         <SelectTrigger className="w-36 border-slate-700 bg-slate-800 text-white h-8 text-xs">
-          <SelectValue placeholder="Background..." />
+          <SelectValue placeholder="Background...">
+            {backgrounds.find((b) => b.id === row.backgroundId)?.name || "Background..."}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent className="border-slate-700 bg-slate-900 text-white max-h-48">
           {backgrounds.map((b) => (
@@ -886,7 +890,9 @@ export function TransaksiClient({
                   onValueChange={(v) => setCreateRollId(v ?? "")}
                 >
                   <SelectTrigger className="border-slate-700 bg-slate-800 text-white">
-                    <SelectValue placeholder="Pilih Roll..." />
+                    <SelectValue placeholder="Pilih Roll...">
+                      {rolls.find((r) => r.id === createRollId)?.rollName || "Pilih Roll..."}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent className="border-slate-700 bg-slate-900 text-white">
                     {rolls.map((r) => (
@@ -1355,7 +1361,9 @@ export function TransaksiClient({
                   onValueChange={(v) => setBatchFontId(v ?? "")}
                 >
                   <SelectTrigger className="border-slate-700 bg-slate-800 text-white">
-                    <SelectValue placeholder="Pilih font..." />
+                    <SelectValue placeholder="Pilih font...">
+                      {fonts.find((f) => f.id === batchFontId)?.name}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent className="border-slate-700 bg-slate-900 text-white">
                     {fonts.map((f) => (
@@ -1375,7 +1383,9 @@ export function TransaksiClient({
                   onValueChange={(v) => setBatchBackgroundId(v ?? "")}
                 >
                   <SelectTrigger className="border-slate-700 bg-slate-800 text-white">
-                    <SelectValue placeholder="Pilih background..." />
+                    <SelectValue placeholder="Pilih background...">
+                      {backgrounds.find((b) => b.id === batchBackgroundId)?.name}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent className="border-slate-700 bg-slate-900 text-white">
                     {backgrounds.map((b) => (

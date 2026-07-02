@@ -75,11 +75,18 @@ function ensureFontRegistered(fontFamily: string, filePath: string): string {
   const absPath = path.isAbsolute(filePath)
     ? filePath
     : path.join(FONTS_DIR, filePath);
+  
+  // Use a completely safe alphanumeric alias to prevent napi-rs/canvas parsing errors
+  const safeAlias = fontFamily.replace(/[^a-zA-Z0-9]/g, "") + Math.random().toString(36).slice(2, 7);
+  
   if (fs.existsSync(absPath)) {
-    GlobalFonts.registerFromPath(absPath, fontFamily);
-    registeredFonts.set(fontFamily, fontFamily);
+    GlobalFonts.registerFromPath(absPath, safeAlias);
+    registeredFonts.set(fontFamily, safeAlias);
+  } else {
+    console.error(`[FONT_REGISTER] File not found: ${absPath}`);
+    return "Arial";
   }
-  return fontFamily;
+  return safeAlias;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -158,13 +165,13 @@ async function drawLabel(
   ctx.fillStyle = fontColor;
 
   while (fontSize > minFontPx) {
-    ctx.font = `bold ${fontSize}px "${fontFamily}", Arial`;
+    ctx.font = `bold ${fontSize}px ${fontFamily}`;
     const m = ctx.measureText(name);
     if (m.width <= maxTextWidth) break;
     fontSize -= 1;
   }
 
-  ctx.font = `bold ${fontSize}px "${fontFamily}", Arial`;
+  ctx.font = `bold ${fontSize}px ${fontFamily}`;
   const measured = ctx.measureText(name);
   const textX = (labelW - measured.width) / 2;
   const textY = labelH / 2;
@@ -190,7 +197,7 @@ export async function generateLabels(
 
   for (const d of details) {
     if (d.fontFamily && d.fontFilePath) {
-      ensureFontRegistered(d.fontFamily, d.fontFilePath);
+      d.fontFamily = ensureFontRegistered(d.fontFamily, d.fontFilePath);
     }
   }
 

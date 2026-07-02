@@ -161,8 +161,8 @@ export function RollClient({
     try {
       const result = await createRoll({
         rollName,
-        heightCm: parseFloat(heightCm),
-        quantity: parseInt(quantity),
+        heightCm: 0,
+        quantity: parseInt(quantity) || 0,
         path: rollPath || null,
       });
       if (result.error) {
@@ -268,20 +268,7 @@ export function RollClient({
                   className="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="heightCm" className="text-slate-300">
-                  Tinggi (cm) <span className="text-red-400">*</span>
-                </Label>
-                <Input
-                  id="heightCm"
-                  type="number"
-                  step="0.01"
-                  placeholder="Contoh: 29.7"
-                  value={heightCm}
-                  onChange={(e) => setHeightCm(e.target.value)}
-                  className="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500"
-                />
-              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="quantity" className="text-slate-300">
                   Quantity (Estimasi Halaman) <span className="text-red-400">*</span>
@@ -392,7 +379,7 @@ export function RollClient({
               <TableHeader>
                 <TableRow className="border-slate-800 hover:bg-transparent">
                   <TableHead className="text-slate-400">Nama Roll</TableHead>
-                  <TableHead className="text-slate-400">Tinggi (cm)</TableHead>
+
                   <TableHead className="text-slate-400">Quantity</TableHead>
                   <TableHead className="text-slate-400">Path</TableHead>
                   <TableHead className="text-slate-400">Status</TableHead>
@@ -406,9 +393,7 @@ export function RollClient({
                     <TableCell className="font-medium text-white">
                       {roll.rollName}
                     </TableCell>
-                    <TableCell className="text-slate-300">
-                      {roll.heightCm} cm
-                    </TableCell>
+
                     <TableCell className="text-slate-300">
                       {roll.quantity}
                     </TableCell>
@@ -520,15 +505,7 @@ export function RollClient({
             </div>
             {selectedRoll && (
               <>
-                <div className="space-y-2">
-                  <Label className="text-slate-400">Tinggi (cm)</Label>
-                  <div className="rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm text-slate-400">
-                    {selectedRoll.heightCm} cm
-                  </div>
-                  <p className="text-xs text-slate-500">
-                    Tinggi tidak dapat diubah setelah dibuat
-                  </p>
-                </div>
+
                 <div className="space-y-2">
                   <Label className="text-slate-400">Quantity</Label>
                   <div className="rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm text-slate-400">

@@ -398,7 +398,7 @@ export function TransaksiClient({
       const result = await createTransaction({
         rollId: createRollId,
         transactionDate: createDate,
-        quantity: parseInt(createQty) || 1,
+        quantity: 1,
         numberOfDetails: createDetails.length,
         resiNumber: createResi.trim() || null,
       });
@@ -454,7 +454,7 @@ export function TransaksiClient({
       const result = await updateTransaction(selectedTx.id, {
         rollId: editRollId,
         transactionDate: editDate,
-        quantity: parseInt(editQty) || 1,
+        quantity: 1,
         numberOfDetails: editDetails.length,
         resiNumber: editResi.trim() || null,
         status: editStatus as "Processed" | "Failed" | "Completed",

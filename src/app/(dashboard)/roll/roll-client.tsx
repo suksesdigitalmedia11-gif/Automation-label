@@ -168,8 +168,8 @@ export function RollClient({
     try {
       const result = await createRoll({
         rollName,
-        heightCm: 0,
-        quantity: 1,
+        heightCm: parseFloat(heightCm) || 0,
+        quantity: Math.max(1, parseInt(quantity) || 1),
         path: rollPath || null,
       });
       if (result.error) {
@@ -403,10 +403,8 @@ export function RollClient({
               <TableHeader>
                 <TableRow className="border-slate-800 hover:bg-transparent">
                   <TableHead className="text-slate-400">Nama Roll</TableHead>
-                  <TableHead className="text-slate-400">Tinggi</TableHead>
-                  <TableHead className="text-slate-400">Qty</TableHead>
                   <TableHead className="text-slate-400">
-                    Total Panjang
+                    Panjang Total
                   </TableHead>
                   <TableHead className="text-slate-400">Status</TableHead>
                   <TableHead className="text-slate-400">Tanggal</TableHead>
@@ -422,12 +420,10 @@ export function RollClient({
                       {roll.rollName}
                     </TableCell>
                     <TableCell className="text-slate-300">
-                      {roll.heightCm} cm
-                    </TableCell>
-                    <TableCell className="text-slate-300">
-                      {roll.quantity}
+                      {roll.rollName}
                     </TableCell>
                     <TableCell className="text-slate-300 font-semibold">
+                      {roll.heightCm} cm × {roll.quantity} roll ={" "}
                       {(parseFloat(roll.heightCm) * roll.quantity).toFixed(1)}{" "}
                       cm
                     </TableCell>

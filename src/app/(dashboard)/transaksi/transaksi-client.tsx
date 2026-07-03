@@ -696,13 +696,10 @@ export function TransaksiClient({
                   <TableHead className="text-slate-400">Tanggal</TableHead>
                   <TableHead className="text-slate-400">Roll</TableHead>
                   <TableHead className="text-slate-400 text-center">
-                    Qty
-                  </TableHead>
-                  <TableHead className="text-slate-400 text-center">
                     Detail
                   </TableHead>
                   <TableHead className="text-slate-400 text-center">
-                    Ukuran
+                    Total
                   </TableHead>
                   <TableHead className="text-slate-400">Status</TableHead>
                   <TableHead className="text-slate-400">Output</TableHead>
@@ -722,9 +719,6 @@ export function TransaksiClient({
                     </TableCell>
                     <TableCell className="text-white font-medium">
                       {tx.roll.rollName}
-                    </TableCell>
-                    <TableCell className="text-slate-300 text-center">
-                      {tx.quantity ?? 1}
                     </TableCell>
                     <TableCell className="text-center">
                       {tx.numberOfDetails ? (
@@ -854,8 +848,8 @@ export function TransaksiClient({
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-5 py-4">
-            {/* Row 1: Roll + Date + Qty */}
-            <div className="grid grid-cols-3 gap-4">
+            {/* Row 1: Roll + Date */}
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-slate-300">
                   Pilih Roll Kertas <span className="text-red-400">*</span>
@@ -888,19 +882,6 @@ export function TransaksiClient({
                   value={createDate}
                   onChange={(e) => setCreateDate(e.target.value)}
                   className="border-slate-700 bg-slate-800 text-white"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-slate-300">
-                  Copy (Jumlah per Halaman)
-                </Label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={createQty}
-                  onChange={(e) => setCreateQty(e.target.value)}
-                  className="border-slate-700 bg-slate-800 text-white"
-                  title="Berapa banyak salinan halaman yang sama ingin dicetak"
                 />
               </div>
             </div>

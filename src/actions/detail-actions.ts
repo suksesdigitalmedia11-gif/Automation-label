@@ -9,6 +9,7 @@ const detailSchema = z.object({
   name: z.string().min(1, "Nama wajib diisi"),
   fontId: z.string().optional().nullable(),
   backgroundId: z.string().optional().nullable(),
+  resiNumber: z.string().optional().nullable(),
   quantity: z.coerce.number().int().positive().default(1),
   sortOrder: z.coerce.number().int().default(0),
 });
@@ -23,7 +24,7 @@ export type DetailInput = z.infer<typeof detailSchema>;
 /** Replace all details for a transaction (used after form submit) */
 export async function saveTransactionDetails(
   transactionId: string,
-  details: DetailInput[]
+  details: DetailInput[],
 ) {
   try {
     await requireAuth();
@@ -47,6 +48,7 @@ export async function saveTransactionDetails(
         data: parsed.data.details.map((d, idx) => ({
           transactionId,
           name: d.name,
+          resiNumber: d.resiNumber || null,
           fontId: d.fontId || null,
           backgroundId: d.backgroundId || null,
           quantity: d.quantity,
@@ -74,7 +76,7 @@ export async function importDetailsFromText(
   namesText: string,
   defaultFontId: string | null,
   defaultBackgroundId: string | null,
-  defaultQuantity: number
+  defaultQuantity: number,
 ) {
   try {
     await requireAuth();
@@ -135,7 +137,9 @@ export async function getTransactionDetails(transactionId: string) {
     orderBy: { sortOrder: "asc" },
     include: {
       font: { select: { id: true, name: true, fontFamily: true } },
-      background: { select: { id: true, name: true, fontColor: true, imagePath: true } },
+      background: {
+        select: { id: true, name: true, fontColor: true, imagePath: true },
+      },
     },
   });
 

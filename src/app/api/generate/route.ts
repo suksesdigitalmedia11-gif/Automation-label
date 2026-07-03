@@ -56,19 +56,30 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const txData = roll.transactions.map((tx) => ({
-      resiNumber: tx.resiNumber ?? null,
-      details: tx.details.map((d) => ({
+    // Group details by resiNumber — each resi = separate transaction with own barcode
+    const resiGroups = new Map<string, typeof tx.details>();
+    for (const d of tx.details) {
+      const resi = d.resiNumber?.trim() || "-";
+      if (!resiGroups.has(resi)) resiGroups.set(resi, []);
+      resiGroups.get(resi)!.push(d);
+    }
+
+    const txData = Array.from(resiGroups.entries()).map(([resi, details]) => ({
+      resiNumber: resi === "-" ? null : resi,
+      details: details.map((d) => ({
         name: d.name,
         fontFamily: d.font?.fontFamily ?? d.font?.name ?? "Arial",
         fontFilePath: d.font?.filePath
           ? path.join(FONTS_DIR, d.font.filePath)
           : null,
-        fontFileBase64: d.font?.fileBase64 ?? null,
+        fontFileBase64:
+          ((d.font as Record<string, unknown>)?.fileBase64 as string) ?? null,
         backgroundImagePath: d.background?.imagePath
           ? path.join(BG_DIR, d.background.imagePath)
           : null,
-        backgroundFileBase64: d.background?.fileBase64 ?? null,
+        backgroundFileBase64:
+          ((d.background as Record<string, unknown>)?.fileBase64 as string) ??
+          null,
         fontColor: d.background?.fontColor ?? "#FFFFFF",
         quantity: d.quantity,
       })),
@@ -129,7 +140,8 @@ export async function GET(request: NextRequest) {
   }
 
   const { searchParams } = new URL(request.url);
-  const transactionId = searchParams.get("rollId") || searchParams.get("transactionId");
+  const transactionId =
+    searchParams.get("rollId") || searchParams.get("transactionId");
 
   if (!transactionId) {
     return NextResponse.json(

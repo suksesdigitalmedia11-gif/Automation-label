@@ -109,6 +109,7 @@ interface DetailRow {
   name: string;
   fontId: string;
   backgroundId: string;
+  resiNumber: string;
   quantity: number;
 }
 
@@ -171,6 +172,12 @@ function DetailRowInput({
         value={row.name}
         onChange={(e) => onChange(idx, "name", e.target.value)}
         className="flex-1 border-slate-700 bg-slate-800 text-white text-sm h-8 placeholder:text-slate-500"
+      />
+      <Input
+        placeholder="Resi"
+        value={row.resiNumber}
+        onChange={(e) => onChange(idx, "resiNumber", e.target.value)}
+        className="w-20 border-slate-700 bg-slate-800 text-white text-sm h-8 placeholder:text-slate-500"
       />
       <Select
         value={row.fontId}
@@ -325,6 +332,7 @@ export function TransaksiClient({
       name: "",
       fontId: fonts[0]?.id ?? "",
       backgroundId: backgrounds[0]?.id ?? "",
+      resiNumber: "",
       quantity: 1,
     };
     if (target === "create") setCreateDetails((prev) => [...prev, emptyRow]);
@@ -415,6 +423,7 @@ export function TransaksiClient({
           name: d.name.trim(),
           fontId: d.fontId || null,
           backgroundId: d.backgroundId || null,
+          resiNumber: d.resiNumber || null,
           quantity: d.quantity,
           sortOrder: i,
         })),
@@ -472,6 +481,7 @@ export function TransaksiClient({
             name: d.name.trim(),
             fontId: d.fontId || null,
             backgroundId: d.backgroundId || null,
+            resiNumber: d.resiNumber || null,
             quantity: d.quantity,
             sortOrder: i,
           })),
@@ -531,6 +541,7 @@ export function TransaksiClient({
       name,
       fontId: batchFontId || (fonts[0]?.id ?? ""),
       backgroundId: batchBackgroundId || (backgrounds[0]?.id ?? ""),
+      resiNumber: "",
       quantity: parseInt(batchQuantity) || 1,
     }));
     if (target === "create") setCreateDetails(rows);

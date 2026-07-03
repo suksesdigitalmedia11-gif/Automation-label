@@ -20,7 +20,7 @@ export const CM_TO_PX = DPI / 2.54; // 1 cm ≈ 118.11 px at 300 DPI
 export const MEDIA_WIDTH_CM = 58.0;
 
 // ⚠️ PRODUCTION-CRITICAL: ukuran label tetap (CRE-12).
-export const LABEL_WIDTH_CM = 5.0;
+export const LABEL_WIDTH_CM = 5.4;
 export const LABEL_HEIGHT_CM = 1.4;
 
 // ⚠️ PRODUCTION-CRITICAL: spacing antar label (CRE-12).
@@ -34,9 +34,9 @@ export const LABELS_PER_PACK = 5;
 // ⚠️ PRODUCTION-CRITICAL: gap antar paket ke bawah (CRE-12).
 export const GAP_ANTAR_PAKET_CM = 0.6;
 
-// ⚠️ PRODUCTION-CRITICAL: lebar area barcode — sisa dari 58cm setelah label + gap (CRE-12).
-// 58cm - (10 × 5cm + 9 × 0.15cm) = 58 - 51.35 = 6.65cm
-export const BARCODE_WIDTH_CM = 6.65;
+// ⚠️ PRODUCTION-CRITICAL: lebar area barcode — sisa dari 58cm setelah label + gap.
+// 58cm - (10 × 5.4cm + 9 × 0.15cm) = 58 - 55.35 = 2.65cm
+export const BARCODE_WIDTH_CM = 2.65;
 
 // ⚠️ PRODUCTION-CRITICAL: lebar media dalam pixel (58cm @ 300 DPI).
 export const MEDIA_WIDTH_PX = Math.round(MEDIA_WIDTH_CM * CM_TO_PX);
@@ -72,7 +72,7 @@ export const MIN_FONT_SIZE_PX = 28;
 
 // ⚠️ PRODUCTION-CRITICAL: rasio lebar maksimum teks terhadap lebar label.
 // Dikurangi menjadi 0.70 agar tidak menabrak bintang di plat desain
-export const MAX_TEXT_WIDTH_RATIO = 0.70;
+export const MAX_TEXT_WIDTH_RATIO = 0.7;
 
 // ⚠️ PRODUCTION-CRITICAL: format output gambar.
 export const OUTPUT_FORMAT = "image/png";

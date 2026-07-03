@@ -59,6 +59,7 @@ import {
   deleteTransaction,
 } from "@/actions/transaksi-actions";
 import { saveTransactionDetails } from "@/actions/detail-actions";
+import { calcOutputHeightCm, calcTotalLabels } from "@/lib/output-calc";
 
 // ─── Status Badge ─────────────────────────────────────────────────────────────
 const statusBadge = (status: string) => {
@@ -194,7 +195,8 @@ function DetailRowInput({
       >
         <SelectTrigger className="w-36 border-slate-700 bg-slate-800 text-white h-8 text-xs">
           <SelectValue placeholder="Background...">
-            {backgrounds.find((b) => b.id === row.backgroundId)?.name || "Background..."}
+            {backgrounds.find((b) => b.id === row.backgroundId)?.name ||
+              "Background..."}
           </SelectValue>
         </SelectTrigger>
         <SelectContent className="border-slate-700 bg-slate-900 text-white max-h-48">
@@ -514,8 +516,6 @@ export function TransaksiClient({
     }
   };
 
-
-
   // ─── Batch Import ─────────────────────────────────────────────────────────
 
   const applyBatchImport = (target: "create" | "edit") => {
@@ -566,10 +566,23 @@ export function TransaksiClient({
           <FileText className="h-4 w-4" /> Panduan Penggunaan
         </h2>
         <ol className="list-decimal list-inside text-xs text-slate-300 space-y-1">
-          <li><strong>Siapkan Material:</strong> Pastikan Anda sudah mengupload desain background (.png) di menu <em>Background</em>.</li>
-          <li><strong>Buat Roll:</strong> Tambahkan nama tipe Roll/Kertas di menu <em>Roll</em>.</li>
-          <li><strong>Input Transaksi:</strong> Klik <em>Tambah Transaksi</em>, lalu masukkan daftar nama customer (bisa via Import Excel/Text).</li>
-          <li><strong>Generate:</strong> Klik icon tongkat sihir (<Wand2 className="inline h-3 w-3 text-purple-400 mx-0.5" />) di tabel untuk memproses PNG siap cetak.</li>
+          <li>
+            <strong>Siapkan Material:</strong> Pastikan Anda sudah mengupload
+            desain background (.png) di menu <em>Background</em>.
+          </li>
+          <li>
+            <strong>Buat Roll:</strong> Tambahkan nama tipe Roll/Kertas di menu{" "}
+            <em>Roll</em>.
+          </li>
+          <li>
+            <strong>Input Transaksi:</strong> Klik <em>Tambah Transaksi</em>,
+            lalu masukkan daftar nama customer (bisa via Import Excel/Text).
+          </li>
+          <li>
+            <strong>Generate:</strong> Klik icon tongkat sihir (
+            <Wand2 className="inline h-3 w-3 text-purple-400 mx-0.5" />) di
+            tabel untuk memproses PNG siap cetak.
+          </li>
         </ol>
       </div>
 
@@ -688,6 +701,9 @@ export function TransaksiClient({
                   <TableHead className="text-slate-400 text-center">
                     Detail
                   </TableHead>
+                  <TableHead className="text-slate-400 text-center">
+                    Ukuran
+                  </TableHead>
                   <TableHead className="text-slate-400">Status</TableHead>
                   <TableHead className="text-slate-400">Output</TableHead>
                   <TableHead className="text-slate-400 text-right">
@@ -723,9 +739,18 @@ export function TransaksiClient({
                         <span className="text-slate-600 text-xs">—</span>
                       )}
                     </TableCell>
+                    <TableCell className="text-center">
+                      {tx.details?.length ? (
+                        <span className="text-xs text-slate-400">
+                          {calcOutputHeightCm(calcTotalLabels(tx.details))} cm
+                        </span>
+                      ) : (
+                        <span className="text-slate-600 text-xs">—</span>
+                      )}
+                    </TableCell>
                     <TableCell>{statusBadge(tx.status)}</TableCell>
                     <TableCell>
-                      {(tx.roll?.path || tx.path) ? (
+                      {tx.roll?.path || tx.path ? (
                         <a
                           href={(tx.roll?.path || tx.path) as string}
                           target="_blank"
@@ -841,7 +866,8 @@ export function TransaksiClient({
                 >
                   <SelectTrigger className="border-slate-700 bg-slate-800 text-white">
                     <SelectValue placeholder="Pilih Roll...">
-                      {rolls.find((r) => r.id === createRollId)?.rollName || "Pilih Roll..."}
+                      {rolls.find((r) => r.id === createRollId)?.rollName ||
+                        "Pilih Roll..."}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent className="border-slate-700 bg-slate-900 text-white">
@@ -865,7 +891,9 @@ export function TransaksiClient({
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-slate-300">Copy (Jumlah per Halaman)</Label>
+                <Label className="text-slate-300">
+                  Copy (Jumlah per Halaman)
+                </Label>
                 <Input
                   type="number"
                   min={1}
@@ -888,8 +916,10 @@ export function TransaksiClient({
                 className="border-slate-700 bg-slate-800 text-white"
               />
               <p className="text-xs text-slate-500">
-                Tip: Untuk cetak banyak resi secara masal, pisahkan dengan koma (contoh: JNT123, JNT456).<br/>
-                📐 Ukuran label: 5cm × 1,4cm | 1 paket = 50 pcs
+                Tip: Untuk cetak banyak resi secara masal, pisahkan dengan koma
+                (contoh: JNT123, JNT456).
+                <br />
+                📐 Ukuran label: 5,4cm × 1,4cm | 1 paket = 50 pcs
               </p>
             </div>
 
@@ -1052,8 +1082,10 @@ export function TransaksiClient({
                 className="border-slate-700 bg-slate-800 text-white"
               />
               <p className="text-xs text-slate-500">
-                Tip: Untuk cetak banyak resi secara masal, pisahkan dengan koma (contoh: JNT123, JNT456).<br/>
-                📐 Ukuran label: 5cm × 1,4cm | 1 paket = 50 pcs
+                Tip: Untuk cetak banyak resi secara masal, pisahkan dengan koma
+                (contoh: JNT123, JNT456).
+                <br />
+                📐 Ukuran label: 5,4cm × 1,4cm | 1 paket = 50 pcs
               </p>
             </div>
 
@@ -1131,8 +1163,6 @@ export function TransaksiClient({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-
 
       {/* ─── Batch Import Dialog ──────────────────────────────────────────────── */}
       <Dialog open={batchImportOpen} onOpenChange={setBatchImportOpen}>
@@ -1236,7 +1266,10 @@ export function TransaksiClient({
                 >
                   <SelectTrigger className="border-slate-700 bg-slate-800 text-white">
                     <SelectValue placeholder="Pilih background...">
-                      {backgrounds.find((b) => b.id === batchBackgroundId)?.name}
+                      {
+                        backgrounds.find((b) => b.id === batchBackgroundId)
+                          ?.name
+                      }
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent className="border-slate-700 bg-slate-900 text-white">

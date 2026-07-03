@@ -2,12 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -272,9 +267,7 @@ export function RollClient({
         return;
       }
       setGenerateResult(data);
-      toast.success(
-        `Label berhasil di-generate! ${data.totalLabels} label`,
-      );
+      toast.success(`Label berhasil di-generate! ${data.totalLabels} label`);
       router.refresh();
     } catch {
       toast.error("Terjadi kesalahan saat generate");
@@ -313,7 +306,6 @@ export function RollClient({
                 />
               </div>
 
-
               <div className="space-y-2">
                 <Label htmlFor="rollPath" className="text-slate-300">
                   Path
@@ -340,7 +332,10 @@ export function RollClient({
               </Button>
               <Button onClick={handleCreate} disabled={formLoading}>
                 {formLoading ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menyimpan...</>
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />{" "}
+                    Menyimpan...
+                  </>
                 ) : (
                   "Simpan"
                 )}
@@ -367,7 +362,7 @@ export function RollClient({
               <Select
                 value={statusFilter || "all"}
                 onValueChange={(val) => {
-                  setStatusFilter(val === "all" ? "" : val ?? "");
+                  setStatusFilter(val === "all" ? "" : (val ?? ""));
                 }}
               >
                 <SelectTrigger className="border-slate-700 bg-slate-800 text-white">
@@ -396,9 +391,7 @@ export function RollClient({
             <ScrollText className="h-5 w-5 text-blue-400" />
             Daftar Roll
           </CardTitle>
-          <span className="text-sm text-slate-400">
-            {totalCount} total
-          </span>
+          <span className="text-sm text-slate-400">{totalCount} total</span>
         </CardHeader>
         <CardContent>
           {rolls.length === 0 ? (
@@ -410,12 +403,16 @@ export function RollClient({
               <TableHeader>
                 <TableRow className="border-slate-800 hover:bg-transparent">
                   <TableHead className="text-slate-400">Nama Roll</TableHead>
-
-                  <TableHead className="text-slate-400">Quantity</TableHead>
-                  <TableHead className="text-slate-400">Path</TableHead>
+                  <TableHead className="text-slate-400">Tinggi</TableHead>
+                  <TableHead className="text-slate-400">Qty</TableHead>
+                  <TableHead className="text-slate-400">
+                    Total Panjang
+                  </TableHead>
                   <TableHead className="text-slate-400">Status</TableHead>
                   <TableHead className="text-slate-400">Tanggal</TableHead>
-                  <TableHead className="text-slate-400 text-right">Aksi</TableHead>
+                  <TableHead className="text-slate-400 text-right">
+                    Aksi
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -424,12 +421,15 @@ export function RollClient({
                     <TableCell className="font-medium text-white">
                       {roll.rollName}
                     </TableCell>
-
+                    <TableCell className="text-slate-300">
+                      {roll.heightCm} cm
+                    </TableCell>
                     <TableCell className="text-slate-300">
                       {roll.quantity}
                     </TableCell>
-                    <TableCell className="text-slate-400 max-w-[150px] truncate">
-                      {roll.path || "-"}
+                    <TableCell className="text-slate-300 font-semibold">
+                      {(parseFloat(roll.heightCm) * roll.quantity).toFixed(1)}{" "}
+                      cm
                     </TableCell>
                     <TableCell>{statusBadge(roll.status)}</TableCell>
                     <TableCell className="text-slate-400">
@@ -449,7 +449,9 @@ export function RollClient({
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => router.push(`/transaksi?rollId=${roll.id}`)}
+                          onClick={() =>
+                            router.push(`/transaksi?rollId=${roll.id}`)
+                          }
                           className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
                           title="Lihat Transaksi"
                         >
@@ -488,7 +490,9 @@ export function RollClient({
                 <PaginationContent>
                   <PaginationItem>
                     <PaginationPrevious
-                      onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                      onClick={() =>
+                        handlePageChange(Math.max(1, currentPage - 1))
+                      }
                       className={
                         currentPage <= 1
                           ? "pointer-events-none opacity-50"
@@ -512,7 +516,7 @@ export function RollClient({
                           {p}
                         </PaginationLink>
                       </PaginationItem>
-                    )
+                    ),
                   )}
                   <PaginationItem>
                     <PaginationNext
@@ -554,7 +558,6 @@ export function RollClient({
             </div>
             {selectedRoll && (
               <>
-
                 <div className="space-y-2">
                   <Label className="text-slate-400">Quantity</Label>
                   <div className="rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-sm text-slate-400">
@@ -581,7 +584,10 @@ export function RollClient({
               <Label htmlFor="editStatus" className="text-slate-300">
                 Status
               </Label>
-              <Select value={editStatus} onValueChange={(val) => val && setEditStatus(val)}>
+              <Select
+                value={editStatus}
+                onValueChange={(val) => val && setEditStatus(val)}
+              >
                 <SelectTrigger className="border-slate-700 bg-slate-800 text-white">
                   <SelectValue />
                 </SelectTrigger>
@@ -603,7 +609,9 @@ export function RollClient({
             </Button>
             <Button onClick={handleEdit} disabled={formLoading}>
               {formLoading ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menyimpan...</>
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menyimpan...
+                </>
               ) : (
                 "Simpan Perubahan"
               )}
@@ -634,8 +642,9 @@ export function RollClient({
                   </p>
                 </div>
                 <p className="text-sm text-slate-400">
-                  Sistem akan menarik semua transaksi pada Roll ini dan me-render
-                  keseluruhan label beserta resi secara terpusat menjadi 1 file PNG beresolusi 300 DPI siap cetak.
+                  Sistem akan menarik semua transaksi pada Roll ini dan
+                  me-render keseluruhan label beserta resi secara terpusat
+                  menjadi 1 file PNG beresolusi 300 DPI siap cetak.
                 </p>
                 <Button
                   onClick={handleGenerate}
@@ -721,7 +730,9 @@ export function RollClient({
               disabled={formLoading}
             >
               {formLoading ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menghapus...</>
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Menghapus...
+                </>
               ) : (
                 "Hapus"
               )}

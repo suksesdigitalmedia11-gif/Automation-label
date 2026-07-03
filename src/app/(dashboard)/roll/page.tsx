@@ -29,7 +29,7 @@ export default async function RollPage({ searchParams }: PageProps) {
     where.status = statusFilter;
   }
 
-  const [rolls, totalCount] = await Promise.all([
+  const [rolls, totalCount, allRolls] = await Promise.all([
     prisma.roll.findMany({
       where,
       orderBy: { createdAt: "desc" },
@@ -37,9 +37,14 @@ export default async function RollPage({ searchParams }: PageProps) {
       take: limit,
     }),
     prisma.roll.count({ where }),
+    prisma.roll.findMany({ select: { heightCm: true, quantity: true } }),
   ]);
 
   const totalPages = Math.ceil(totalCount / limit);
+  const totalRollLength = allRolls.reduce(
+    (acc, r) => acc + Number(r.heightCm) * r.quantity,
+    0,
+  );
 
   return (
     <RollClient

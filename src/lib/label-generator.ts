@@ -393,12 +393,12 @@ export async function generateLabels(
       const resiFontSize = Math.min(100, Math.round(BARCODE_WIDTH_PX * 0.28));
       ctx.font = `bold ${resiFontSize}px Arial, sans-serif`;
 
-      ctx.textBaseline = "middle";
+      ctx.textBaseline = "top";
       ctx.textAlign = "center";
 
-      // Align resi text center with first label row's text center
+      // Mulai tepat di atas — sejajar dengan tepi atas label pertama
       const resiTextX = BARCODE_WIDTH_PX / 2;
-      const resiTextY = pktY + LABEL_HEIGHT_PX / 2;
+      const resiTextY = pktY;
 
       ctx.translate(resiTextX, resiTextY);
       ctx.rotate(-Math.PI / 2);

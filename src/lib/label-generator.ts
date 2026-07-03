@@ -385,7 +385,7 @@ export async function generateLabels(
       const packet = tx.packets[pIdx];
       const pktY = currentPacketIndex * (PAKET_HEIGHT_PX + GAP_ANTAR_PAKET_PX);
 
-      // Draw Resi text — polos, sejajar awal nama cetakan (top-aligned)
+      // Draw Resi text — polos, sejajar baris pertama label
       ctx.save();
 
       ctx.fillStyle = "#000000";
@@ -393,17 +393,21 @@ export async function generateLabels(
       const resiFontSize = Math.min(100, Math.round(BARCODE_WIDTH_PX * 0.28));
       ctx.font = `bold ${resiFontSize}px Arial, sans-serif`;
 
-      ctx.textBaseline = "top";
+      ctx.textBaseline = "middle";
       ctx.textAlign = "center";
 
-      // Position at top of packet, aligned with first row of labels
+      // Align resi text center with first label row's text center
       const resiTextX = BARCODE_WIDTH_PX / 2;
-      const resiTextY = pktY;
+      const resiTextY = pktY + LABEL_HEIGHT_PX / 2;
 
       ctx.translate(resiTextX, resiTextY);
       ctx.rotate(-Math.PI / 2);
 
-      const currentResi = tx.resiList[pIdx % tx.resiList.length];
+      // Resi with packet numbering: "RESI-001 1/2", "RESI-001 2/2", etc.
+      const baseResi = tx.resiList[pIdx % tx.resiList.length];
+      const totalPackets = tx.packets.length;
+      const currentResi =
+        totalPackets > 1 ? `${baseResi} ${pIdx + 1}/${totalPackets}` : baseResi;
 
       // Maximum length for the text is the height of the packet
       const maxTextWidth = PAKET_HEIGHT_PX * 0.9;

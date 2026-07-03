@@ -56,34 +56,52 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Group details by resiNumber — each resi = separate transaction with own barcode
-    const resiGroups = new Map<string, typeof tx.details>();
-    for (const d of tx.details) {
-      const resi = d.resiNumber?.trim() || "-";
-      if (!resiGroups.has(resi)) resiGroups.set(resi, []);
-      resiGroups.get(resi)!.push(d);
-    }
+    // Group details by resiNumber — each resi group = own barcode section
+    const txData: {
+      resiNumber: string | null;
+      details: Array<{
+        name: string;
+        fontFamily: string;
+        fontFilePath: string | null;
+        fontFileBase64: string | null;
+        backgroundImagePath: string | null;
+        backgroundFileBase64: string | null;
+        fontColor: string;
+        quantity: number;
+      }>;
+    }[] = [];
 
-    const txData = Array.from(resiGroups.entries()).map(([resi, details]) => ({
-      resiNumber: resi === "-" ? null : resi,
-      details: details.map((d) => ({
-        name: d.name,
-        fontFamily: d.font?.fontFamily ?? d.font?.name ?? "Arial",
-        fontFilePath: d.font?.filePath
-          ? path.join(FONTS_DIR, d.font.filePath)
-          : null,
-        fontFileBase64:
-          ((d.font as Record<string, unknown>)?.fileBase64 as string) ?? null,
-        backgroundImagePath: d.background?.imagePath
-          ? path.join(BG_DIR, d.background.imagePath)
-          : null,
-        backgroundFileBase64:
-          ((d.background as Record<string, unknown>)?.fileBase64 as string) ??
-          null,
-        fontColor: d.background?.fontColor ?? "#FFFFFF",
-        quantity: d.quantity,
-      })),
-    }));
+    for (const tx of roll.transactions) {
+      const resiMap = new Map<string, typeof tx.details>();
+      for (const d of tx.details) {
+        const resi = d.resiNumber?.trim() || "-";
+        if (!resiMap.has(resi)) resiMap.set(resi, []);
+        resiMap.get(resi)!.push(d);
+      }
+      for (const [resi, details] of resiMap.entries()) {
+        txData.push({
+          resiNumber: resi === "-" ? null : resi,
+          details: details.map((d) => ({
+            name: d.name,
+            fontFamily: d.font?.fontFamily ?? d.font?.name ?? "Arial",
+            fontFilePath: d.font?.filePath
+              ? path.join(FONTS_DIR, d.font.filePath)
+              : null,
+            fontFileBase64:
+              ((d.font as Record<string, unknown>)?.fileBase64 as string) ??
+              null,
+            backgroundImagePath: d.background?.imagePath
+              ? path.join(BG_DIR, d.background.imagePath)
+              : null,
+            backgroundFileBase64:
+              ((d.background as Record<string, unknown>)
+                ?.fileBase64 as string) ?? null,
+            fontColor: d.background?.fontColor ?? "#FFFFFF",
+            quantity: d.quantity,
+          })),
+        });
+      }
+    }
 
     // Generate labels with fixed production layout (CRE-12)
     const result = await generateLabels({

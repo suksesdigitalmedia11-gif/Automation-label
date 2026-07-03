@@ -1,8 +1,13 @@
 /**
- * Helper untuk menghitung total panjang media (cm) yang terpakai
- * berdasarkan jumlah label & spesifikasi cetak.
+ * Hitung total cm output dari daftar resi groups.
  */
-export function calcOutputHeightCm(totalLabels: number): number {
+export function calcOutputHeightFromGroups(
+  groups: { details: { quantity: number }[] }[],
+): number {
+  const totalLabels = groups.reduce(
+    (sum, g) => sum + g.details.reduce((s, d) => s + d.quantity, 0),
+    0,
+  );
   if (totalLabels <= 0) return 0;
 
   const LABELS_PER_ROW = 10;
@@ -20,9 +25,4 @@ export function calcOutputHeightCm(totalLabels: number): number {
   const totalCm = packets * paketHeightCm + (packets - 1) * GAP_ANTAR_PAKET_CM;
 
   return Math.round(totalCm * 100) / 100;
-}
-
-/** Hitung total label dari array quantity details */
-export function calcTotalLabels(details: { quantity: number }[]): number {
-  return details.reduce((sum, d) => sum + d.quantity, 0);
 }

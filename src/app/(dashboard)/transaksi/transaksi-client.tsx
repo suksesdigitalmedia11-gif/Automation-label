@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -52,6 +52,7 @@ import {
   Upload,
   X,
   Users,
+  Package,
 } from "lucide-react";
 import {
   createTransaction,
@@ -59,9 +60,9 @@ import {
   deleteTransaction,
 } from "@/actions/transaksi-actions";
 import { saveTransactionDetails } from "@/actions/detail-actions";
-import { calcOutputHeightCm, calcTotalLabels } from "@/lib/output-calc";
+import { calcOutputHeightFromGroups } from "@/lib/output-calc";
 
-// ─── Status Badge ─────────────────────────────────────────────────────────────
+// ─── Status Badge ─────────────────────────────────────────────────────────
 const statusBadge = (status: string) => {
   const colors: Record<string, string> = {
     Processed: "bg-blue-500/10 text-blue-400 border-blue-500/20",
@@ -87,7 +88,7 @@ const formatDate = (d: string) =>
     day: "numeric",
   });
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types ────────────────────────────────────────────────────────────────
 interface Roll {
   id: string;
   rollName: string;
@@ -109,8 +110,12 @@ interface DetailRow {
   name: string;
   fontId: string;
   backgroundId: string;
-  resiNumber: string;
+  resiNumber?: string;
   quantity: number;
+}
+interface ResiGroup {
+  resiNumber: string;
+  details: DetailRow[];
 }
 
 interface Transaction {
@@ -146,46 +151,35 @@ interface Props {
   userRole: string;
 }
 
-// ─── Detail Row Component ─────────────────────────────────────────────────────
+// ─── Detail Row Input ─────────────────────────────────────────────────────
 function DetailRowInput({
-  idx,
-  row,
+  detail,
   fonts,
   backgrounds,
   onChange,
   onRemove,
 }: {
-  idx: number;
-  row: DetailRow;
+  detail: DetailRow;
   fonts: Font[];
   backgrounds: Background[];
-  onChange: (idx: number, field: keyof DetailRow, val: string | number) => void;
-  onRemove: (idx: number) => void;
+  onChange: (field: keyof DetailRow, val: string | number) => void;
+  onRemove: () => void;
 }) {
   return (
-    <div className="flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800/50 p-3">
-      <span className="w-6 text-center text-xs font-bold text-slate-500">
-        {idx + 1}
-      </span>
+    <div className="flex items-center gap-2 rounded border border-slate-700 bg-slate-800/50 p-2">
       <Input
         placeholder="Nama label"
-        value={row.name}
-        onChange={(e) => onChange(idx, "name", e.target.value)}
+        value={detail.name}
+        onChange={(e) => onChange("name", e.target.value)}
         className="flex-1 border-slate-700 bg-slate-800 text-white text-sm h-8 placeholder:text-slate-500"
       />
-      <Input
-        placeholder="Resi"
-        value={row.resiNumber}
-        onChange={(e) => onChange(idx, "resiNumber", e.target.value)}
-        className="w-20 border-slate-700 bg-slate-800 text-white text-sm h-8 placeholder:text-slate-500"
-      />
       <Select
-        value={row.fontId}
-        onValueChange={(v) => onChange(idx, "fontId", v ?? "")}
+        value={detail.fontId}
+        onValueChange={(v) => onChange("fontId", v ?? "")}
       >
-        <SelectTrigger className="w-36 border-slate-700 bg-slate-800 text-white h-8 text-xs">
+        <SelectTrigger className="w-32 border-slate-700 bg-slate-800 text-white h-8 text-xs">
           <SelectValue placeholder="Font...">
-            {fonts.find((f) => f.id === row.fontId)?.name || "Font..."}
+            {fonts.find((f) => f.id === detail.fontId)?.name || "Font..."}
           </SelectValue>
         </SelectTrigger>
         <SelectContent className="border-slate-700 bg-slate-900 text-white max-h-48">
@@ -197,13 +191,13 @@ function DetailRowInput({
         </SelectContent>
       </Select>
       <Select
-        value={row.backgroundId}
-        onValueChange={(v) => onChange(idx, "backgroundId", v ?? "")}
+        value={detail.backgroundId}
+        onValueChange={(v) => onChange("backgroundId", v ?? "")}
       >
-        <SelectTrigger className="w-36 border-slate-700 bg-slate-800 text-white h-8 text-xs">
-          <SelectValue placeholder="Background...">
-            {backgrounds.find((b) => b.id === row.backgroundId)?.name ||
-              "Background..."}
+        <SelectTrigger className="w-32 border-slate-700 bg-slate-800 text-white h-8 text-xs">
+          <SelectValue placeholder="BG...">
+            {backgrounds.find((b) => b.id === detail.backgroundId)?.name ||
+              "BG..."}
           </SelectValue>
         </SelectTrigger>
         <SelectContent className="border-slate-700 bg-slate-900 text-white max-h-48">
@@ -218,18 +212,16 @@ function DetailRowInput({
         type="number"
         min={1}
         max={200}
-        value={row.quantity}
-        onChange={(e) =>
-          onChange(idx, "quantity", parseInt(e.target.value) || 1)
-        }
-        className="w-16 border-slate-700 bg-slate-800 text-white text-sm h-8 text-center"
-        title="Jumlah baris label untuk nama ini"
+        value={detail.quantity}
+        onChange={(e) => onChange("quantity", parseInt(e.target.value) || 1)}
+        className="w-14 border-slate-700 bg-slate-800 text-white text-sm h-8 text-center"
+        title="Jumlah baris label"
       />
       <Button
         variant="ghost"
         size="icon-xs"
-        onClick={() => onRemove(idx)}
-        className="text-red-400 hover:text-red-300 hover:bg-red-900/20 flex-shrink-0"
+        onClick={onRemove}
+        className="text-red-400 hover:text-red-300 hover:bg-red-900/20 shrink-0"
       >
         <X className="h-3.5 w-3.5" />
       </Button>
@@ -237,7 +229,7 @@ function DetailRowInput({
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────────────────────
+// ─── Main Component ──────────────────────────────────────────────────────
 export function TransaksiClient({
   transactions,
   rolls,
@@ -264,33 +256,43 @@ export function TransaksiClient({
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [batchImportOpen, setBatchImportOpen] = useState(false);
 
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [formLoading, setFormLoading] = useState(false);
+  const [generateLoading, setGenerateLoading] = useState(false);
 
-  // Create form
+  const [generateResult, setGenerateResult] = useState<{
+    outputPath: string;
+    totalLabels: number;
+    totalPages: number;
+    base64?: string;
+  } | null>(null);
+
+  // Create form — resi groups
   const [createRollId, setCreateRollId] = useState("");
   const [createDate, setCreateDate] = useState(
     new Date().toISOString().split("T")[0],
   );
-  const [createQty, setCreateQty] = useState("1");
-  const [createResi, setCreateResi] = useState("");
-  const [createDetails, setCreateDetails] = useState<DetailRow[]>([]);
+  const [createGroups, setCreateGroups] = useState<ResiGroup[]>([
+    { resiNumber: "", details: [] },
+  ]);
 
   // Edit form
   const [editRollId, setEditRollId] = useState("");
   const [editDate, setEditDate] = useState("");
-  const [editQty, setEditQty] = useState("");
-  const [editResi, setEditResi] = useState("");
   const [editStatus, setEditStatus] = useState("Processed");
-  const [editDetails, setEditDetails] = useState<DetailRow[]>([]);
+  const [editGroups, setEditGroups] = useState<ResiGroup[]>([
+    { resiNumber: "", details: [] },
+  ]);
 
   // Batch import
   const [batchNamesText, setBatchNamesText] = useState("");
   const [batchFontId, setBatchFontId] = useState("");
   const [batchBackgroundId, setBatchBackgroundId] = useState("");
   const [batchQuantity, setBatchQuantity] = useState("1");
+  const [batchGroupIdx, setBatchGroupIdx] = useState(0);
   const [batchTargetCreate, setBatchTargetCreate] = useState(false);
   const [batchExcelFileName, setBatchExcelFileName] = useState("");
   const [batchExcelLoading, setBatchExcelLoading] = useState(false);
@@ -320,40 +322,86 @@ export function TransaksiClient({
       toast.error("Terjadi kesalahan saat membaca file");
     } finally {
       setBatchExcelLoading(false);
-      // Reset file input so the same file can be re-selected
       e.target.value = "";
     }
   };
 
-  // ─── Helpers ────────────────────────────────────────────────────────────────
+  // ─── Helpers ───────────────────────────────────────────────────────────
 
-  const addDetailRow = (target: "create" | "edit") => {
-    const emptyRow: DetailRow = {
-      name: "",
-      fontId: fonts[0]?.id ?? "",
-      backgroundId: backgrounds[0]?.id ?? "",
-      resiNumber: "",
-      quantity: 1,
-    };
-    if (target === "create") setCreateDetails((prev) => [...prev, emptyRow]);
-    else setEditDetails((prev) => [...prev, emptyRow]);
+  const emptyDetail = (): DetailRow => ({
+    name: "",
+    fontId: fonts[0]?.id ?? "",
+    backgroundId: backgrounds[0]?.id ?? "",
+    quantity: 1,
+  });
+
+  const addResiGroup = (target: "create" | "edit") => {
+    const newGroup = { resiNumber: "", details: [] };
+    if (target === "create") setCreateGroups((prev) => [...prev, newGroup]);
+    else setEditGroups((prev) => [...prev, newGroup]);
   };
 
-  const updateDetailRow = (
+  const removeResiGroup = (target: "create" | "edit", idx: number) => {
+    if (target === "create")
+      setCreateGroups((prev) => prev.filter((_, i) => i !== idx));
+    else setEditGroups((prev) => prev.filter((_, i) => i !== idx));
+  };
+
+  const updateResiNumber = (
     target: "create" | "edit",
-    idx: number,
-    field: keyof DetailRow,
-    val: string | number,
+    groupIdx: number,
+    val: string,
   ) => {
-    const setter = target === "create" ? setCreateDetails : setEditDetails;
+    const setter = target === "create" ? setCreateGroups : setEditGroups;
     setter((prev) =>
-      prev.map((r, i) => (i === idx ? { ...r, [field]: val } : r)),
+      prev.map((g, i) => (i === groupIdx ? { ...g, resiNumber: val } : g)),
     );
   };
 
-  const removeDetailRow = (target: "create" | "edit", idx: number) => {
-    const setter = target === "create" ? setCreateDetails : setEditDetails;
-    setter((prev) => prev.filter((_, i) => i !== idx));
+  const addDetailToGroup = (target: "create" | "edit", groupIdx: number) => {
+    const setter = target === "create" ? setCreateGroups : setEditGroups;
+    setter((prev) =>
+      prev.map((g, i) =>
+        i === groupIdx ? { ...g, details: [...g.details, emptyDetail()] } : g,
+      ),
+    );
+  };
+
+  const updateDetailInGroup = (
+    target: "create" | "edit",
+    groupIdx: number,
+    detailIdx: number,
+    field: keyof DetailRow,
+    val: string | number,
+  ) => {
+    const setter = target === "create" ? setCreateGroups : setEditGroups;
+    setter((prev) =>
+      prev.map((g, i) =>
+        i === groupIdx
+          ? {
+              ...g,
+              details: g.details.map((d, di) =>
+                di === detailIdx ? { ...d, [field]: val } : d,
+              ),
+            }
+          : g,
+      ),
+    );
+  };
+
+  const removeDetailFromGroup = (
+    target: "create" | "edit",
+    groupIdx: number,
+    detailIdx: number,
+  ) => {
+    const setter = target === "create" ? setCreateGroups : setEditGroups;
+    setter((prev) =>
+      prev.map((g, i) =>
+        i === groupIdx
+          ? { ...g, details: g.details.filter((_, di) => di !== detailIdx) }
+          : g,
+      ),
+    );
   };
 
   const applyFilters = () => {
@@ -379,25 +427,30 @@ export function TransaksiClient({
   const resetCreateForm = () => {
     setCreateRollId("");
     setCreateDate(new Date().toISOString().split("T")[0]);
-    setCreateQty("1");
-    setCreateResi("");
-    setCreateDetails([]);
+    setCreateGroups([{ resiNumber: "", details: [] }]);
   };
 
-  // ─── CRUD Handlers ────────────────────────────────────────────────────────
+  const flattenGroups = (groups: ResiGroup[]) => {
+    return groups.flatMap((g) =>
+      g.details.map((d) => ({ ...d, resiNumber: g.resiNumber || null })),
+    );
+  };
+
+  // ─── CRUD Handlers ────────────────────────────────────────────────────
 
   const handleCreate = async () => {
     if (!createRollId || !createDate) {
       toast.error("Harap isi roll dan tanggal transaksi");
       return;
     }
-    if (createDetails.length === 0) {
-      toast.error("Tambahkan minimal 1 baris detail nama");
+    const allDetails = flattenGroups(createGroups);
+    if (allDetails.length === 0) {
+      toast.error("Tambahkan minimal 1 nama");
       return;
     }
-    const invalidDetail = createDetails.find((d) => !d.name.trim());
-    if (invalidDetail) {
-      toast.error("Semua baris detail harus diisi nama");
+    const invalid = allDetails.find((d) => !d.name.trim());
+    if (invalid) {
+      toast.error("Semua nama harus diisi");
       return;
     }
 
@@ -407,8 +460,12 @@ export function TransaksiClient({
         rollId: createRollId,
         transactionDate: createDate,
         quantity: 1,
-        numberOfDetails: createDetails.length,
-        resiNumber: createResi.trim() || null,
+        numberOfDetails: allDetails.length,
+        resiNumber:
+          createGroups
+            .map((g) => g.resiNumber.trim())
+            .filter(Boolean)
+            .join(",") || null,
       });
 
       if (result.error || !result.id) {
@@ -416,10 +473,9 @@ export function TransaksiClient({
         return;
       }
 
-      // Save details
       const detailResult = await saveTransactionDetails(
         result.id,
-        createDetails.map((d, i) => ({
+        allDetails.map((d, i) => ({
           name: d.name.trim(),
           fontId: d.fontId || null,
           backgroundId: d.backgroundId || null,
@@ -449,10 +505,42 @@ export function TransaksiClient({
     setSelectedTx(tx);
     setEditRollId(tx.rollId);
     setEditDate(tx.transactionDate.split("T")[0]);
-    setEditQty((tx.quantity || 1).toString());
-    setEditResi(tx.resiNumber || "");
     setEditStatus(tx.status);
-    setEditDetails(tx.details?.map((d) => ({ ...d })) ?? []);
+
+    // Reconstruct groups from flat details
+    const groups: ResiGroup[] = [];
+    const detailArr = tx.details ?? [];
+    // simple: group by first resiNumber found, or create one group
+    // Since the original data is flat, we reconstruct by finding unique resi numbers
+    const seen = new Set<string>();
+    for (const d of detailArr) {
+      const key =
+        ((d as unknown as Record<string, unknown>).resiNumber as string) || "-";
+      if (seen.has(key)) continue;
+      seen.add(key);
+      groups.push({
+        resiNumber: key === "-" ? "" : key,
+        details: detailArr
+          .filter(
+            (x) =>
+              (((x as unknown as Record<string, unknown>)
+                .resiNumber as string) || "-") === key,
+            key,
+          )
+          .map(
+            (x) =>
+              ({
+                name: x.name,
+                fontId: x.fontId,
+                backgroundId: x.backgroundId,
+                quantity: x.quantity,
+              }) as DetailRow,
+          ),
+      });
+    }
+    if (groups.length === 0) groups.push({ resiNumber: "", details: [] });
+
+    setEditGroups(groups);
     setEditDialogOpen(true);
   };
 
@@ -460,12 +548,17 @@ export function TransaksiClient({
     if (!selectedTx) return;
     setFormLoading(true);
     try {
+      const allDetails = flattenGroups(editGroups);
       const result = await updateTransaction(selectedTx.id, {
         rollId: editRollId,
         transactionDate: editDate,
         quantity: 1,
-        numberOfDetails: editDetails.length,
-        resiNumber: editResi.trim() || null,
+        numberOfDetails: allDetails.length,
+        resiNumber:
+          editGroups
+            .map((g) => g.resiNumber.trim())
+            .filter(Boolean)
+            .join(",") || null,
         status: editStatus as "Processed" | "Failed" | "Completed",
       });
 
@@ -474,10 +567,10 @@ export function TransaksiClient({
         return;
       }
 
-      if (editDetails.length > 0) {
+      if (allDetails.length > 0) {
         const detailResult = await saveTransactionDetails(
           selectedTx.id,
-          editDetails.map((d, i) => ({
+          allDetails.map((d, i) => ({
             name: d.name.trim(),
             fontId: d.fontId || null,
             backgroundId: d.backgroundId || null,
@@ -526,7 +619,41 @@ export function TransaksiClient({
     }
   };
 
-  // ─── Batch Import ─────────────────────────────────────────────────────────
+  // ─── Generate Handler ────────────────────────────────────────────────
+
+  const openGenerateDialog = (tx: Transaction) => {
+    setSelectedTx(tx);
+    setGenerateResult(null);
+    setGenerateDialogOpen(true);
+  };
+
+  const handleGenerate = async () => {
+    if (!selectedTx) return;
+    setGenerateLoading(true);
+    try {
+      const res = await fetch("/api/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rollId: selectedTx.rollId }),
+      });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        toast.error(data.error || "Gagal generate label");
+        return;
+      }
+      setGenerateResult(data);
+      toast.success(
+        `Label berhasil di-generate! ${data.totalLabels} label, ${data.totalPages} halaman`,
+      );
+      router.refresh();
+    } catch {
+      toast.error("Terjadi kesalahan saat generate");
+    } finally {
+      setGenerateLoading(false);
+    }
+  };
+
+  // ─── Batch Import ─────────────────────────────────────────────────────
 
   const applyBatchImport = (target: "create" | "edit") => {
     const names = batchNamesText
@@ -541,17 +668,21 @@ export function TransaksiClient({
       name,
       fontId: batchFontId || (fonts[0]?.id ?? ""),
       backgroundId: batchBackgroundId || (backgrounds[0]?.id ?? ""),
-      resiNumber: "",
       quantity: parseInt(batchQuantity) || 1,
     }));
-    if (target === "create") setCreateDetails(rows);
-    else setEditDetails(rows);
+
+    const setter = target === "create" ? setCreateGroups : setEditGroups;
+    setter((prev) =>
+      prev.map((g, i) =>
+        i === batchGroupIdx ? { ...g, details: [...g.details, ...rows] } : g,
+      ),
+    );
     setBatchImportOpen(false);
     setBatchNamesText("");
     toast.success(`${rows.length} nama berhasil diimport`);
   };
 
-  // ─── UI ──────────────────────────────────────────────────────────────────
+  // ─── UI ──────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
@@ -569,32 +700,6 @@ export function TransaksiClient({
         >
           <Plus className="mr-2 h-4 w-4" /> Tambah Transaksi
         </Button>
-      </div>
-
-      {/* Guide Banner */}
-      <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 p-4">
-        <h2 className="text-sm font-semibold text-blue-400 flex items-center gap-2 mb-2">
-          <FileText className="h-4 w-4" /> Panduan Penggunaan
-        </h2>
-        <ol className="list-decimal list-inside text-xs text-slate-300 space-y-1">
-          <li>
-            <strong>Siapkan Material:</strong> Pastikan Anda sudah mengupload
-            desain background (.png) di menu <em>Background</em>.
-          </li>
-          <li>
-            <strong>Buat Roll:</strong> Tambahkan nama tipe Roll/Kertas di menu{" "}
-            <em>Roll</em>.
-          </li>
-          <li>
-            <strong>Input Transaksi:</strong> Klik <em>Tambah Transaksi</em>,
-            lalu masukkan daftar nama customer (bisa via Import Excel/Text).
-          </li>
-          <li>
-            <strong>Generate:</strong> Klik icon tongkat sihir (
-            <Wand2 className="inline h-3 w-3 text-purple-400 mx-0.5" />) di
-            tabel untuk memproses PNG siap cetak.
-          </li>
-        </ol>
       </div>
 
       {/* Filter Bar */}
@@ -747,7 +852,14 @@ export function TransaksiClient({
                     <TableCell className="text-center">
                       {tx.details?.length ? (
                         <span className="text-xs text-slate-400">
-                          {calcOutputHeightCm(calcTotalLabels(tx.details))} cm
+                          {calcOutputHeightFromGroups([
+                            {
+                              details: tx.details.map((d) => ({
+                                quantity: d.quantity,
+                              })),
+                            },
+                          ])}{" "}
+                          cm
                         </span>
                       ) : (
                         <span className="text-slate-600 text-xs">—</span>
@@ -771,6 +883,15 @@ export function TransaksiClient({
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => openGenerateDialog(tx)}
+                          className="text-purple-400 hover:text-purple-300 hover:bg-purple-900/20"
+                          title="Generate Label"
+                        >
+                          <Wand2 className="h-3.5 w-3.5" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon-xs"
@@ -843,7 +964,7 @@ export function TransaksiClient({
         </Pagination>
       )}
 
-      {/* ─── Create Dialog ──────────────────────────────────────────────────── */}
+      {/* ─── Create Dialog ───────────────────────────────────────────── */}
       <Dialog
         open={createDialogOpen}
         onOpenChange={(o) => {
@@ -851,7 +972,7 @@ export function TransaksiClient({
           if (!o) resetCreateForm();
         }}
       >
-        <DialogContent className="border-slate-800 bg-slate-900 text-white sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="border-slate-800 bg-slate-900 text-white sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-white flex items-center gap-2">
               <ShoppingCart className="h-5 w-5 text-blue-400" /> Tambah
@@ -863,7 +984,7 @@ export function TransaksiClient({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label className="text-slate-300">
-                  Pilih Roll Kertas <span className="text-red-400">*</span>
+                  Roll <span className="text-red-400">*</span>
                 </Label>
                 <Select
                   value={createRollId}
@@ -897,38 +1018,68 @@ export function TransaksiClient({
               </div>
             </div>
 
-            {/* Row 2: Nomor Resi + Info Ukuran Fixed */}
-            <div className="space-y-2">
-              <Label className="text-slate-300">Nomor Resi Customer</Label>
-              <Input
-                type="text"
-                value={createResi}
-                onChange={(e) => setCreateResi(e.target.value)}
-                placeholder="Resi1, Resi2..."
-                className="border-slate-700 bg-slate-800 text-white"
-              />
-              <p className="text-xs text-slate-500">
-                Tip: Untuk cetak banyak resi secara masal, pisahkan dengan koma
-                (contoh: JNT123, JNT456).
-                <br />
-                📐 Ukuran label: 5,4cm × 1,4cm | 1 paket = 50 pcs
-              </p>
-            </div>
+            <p className="text-xs text-slate-500">
+              📐 Ukuran label: 5,4cm × 1,4cm | 1 paket = 50 pcs | Generate
+              per-roll
+            </p>
 
-            {/* Row 3: Detail Nama */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-slate-300 flex items-center gap-2">
-                  <Users className="h-4 w-4" />
-                  Detail Nama ({createDetails.length})
-                  <span className="text-red-400 text-xs">*</span>
-                </Label>
+            {/* Resi Groups */}
+            {createGroups.map((group, gi) => (
+              <div
+                key={gi}
+                className="rounded-lg border border-slate-700 bg-slate-800/30 p-4 space-y-3"
+              >
+                <div className="flex items-center gap-3">
+                  <Package className="h-4 w-4 text-purple-400" />
+                  <Input
+                    placeholder="Nomor Resi (kosongkan jika tidak ada)"
+                    value={group.resiNumber}
+                    onChange={(e) =>
+                      updateResiNumber("create", gi, e.target.value)
+                    }
+                    className="flex-1 border-slate-700 bg-slate-800 text-white text-sm h-8 placeholder:text-slate-500"
+                  />
+                  {createGroups.length > 1 && (
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => removeResiGroup("create", gi)}
+                      className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+
+                {group.details.length === 0 ? (
+                  <p className="text-xs text-slate-500 italic">
+                    Belum ada nama untuk resi ini. Klik &quot;Tambah Nama&quot;
+                    di bawah.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {group.details.map((detail, di) => (
+                      <DetailRowInput
+                        key={di}
+                        detail={detail}
+                        fonts={fonts}
+                        backgrounds={backgrounds}
+                        onChange={(field, val) =>
+                          updateDetailInGroup("create", gi, di, field, val)
+                        }
+                        onRemove={() => removeDetailFromGroup("create", gi, di)}
+                      />
+                    ))}
+                  </div>
+                )}
+
                 <div className="flex gap-2">
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => {
+                      setBatchGroupIdx(gi);
                       setBatchTargetCreate(true);
                       setBatchImportOpen(true);
                     }}
@@ -940,53 +1091,23 @@ export function TransaksiClient({
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => addDetailRow("create")}
+                    onClick={() => addDetailToGroup("create", gi)}
                     className="border-slate-700 text-slate-300 hover:bg-slate-800 h-7 text-xs"
                   >
-                    <Plus className="mr-1 h-3 w-3" /> Tambah Baris
+                    <Plus className="mr-1 h-3 w-3" /> Tambah Nama
                   </Button>
                 </div>
               </div>
-              {createDetails.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-slate-700 p-6 text-center">
-                  <p className="text-sm text-slate-500">
-                    Belum ada detail nama.
-                  </p>
-                  <p className="mt-1 text-xs text-slate-600">
-                    Klik &quot;Import Nama&quot; untuk paste banyak nama, atau
-                    &quot;Tambah Baris&quot; satu per satu.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                  <div className="flex items-center gap-2 px-3 pb-1">
-                    <span className="w-6" />
-                    <span className="flex-1 text-xs text-slate-500">
-                      Nama Label
-                    </span>
-                    <span className="w-36 text-xs text-slate-500">Font</span>
-                    <span className="w-36 text-xs text-slate-500">
-                      Background
-                    </span>
-                    <span className="w-16 text-xs text-slate-500 text-center">
-                      Baris
-                    </span>
-                    <span className="w-6" />
-                  </div>
-                  {createDetails.map((row, idx) => (
-                    <DetailRowInput
-                      key={idx}
-                      idx={idx}
-                      row={row}
-                      fonts={fonts}
-                      backgrounds={backgrounds}
-                      onChange={(i, f, v) => updateDetailRow("create", i, f, v)}
-                      onRemove={(i) => removeDetailRow("create", i)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+            ))}
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => addResiGroup("create")}
+              className="w-full border-dashed border-slate-700 text-slate-400 hover:text-white hover:border-slate-600"
+            >
+              <Plus className="mr-2 h-4 w-4" /> Tambah Resi
+            </Button>
           </div>
           <DialogFooter>
             <Button
@@ -1009,9 +1130,9 @@ export function TransaksiClient({
         </DialogContent>
       </Dialog>
 
-      {/* ─── Edit Dialog ──────────────────────────────────────────────────────── */}
+      {/* ─── Edit Dialog ─────────────────────────────────────────────── */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="border-slate-800 bg-slate-900 text-white sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="border-slate-800 bg-slate-900 text-white sm:max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-white flex items-center gap-2">
               <Pencil className="h-5 w-5 text-yellow-400" /> Edit Transaksi
@@ -1064,36 +1185,66 @@ export function TransaksiClient({
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label className="text-slate-300">Nomor Resi Customer</Label>
-              <Input
-                type="text"
-                value={editResi}
-                onChange={(e) => setEditResi(e.target.value)}
-                placeholder="Resi1, Resi2..."
-                className="border-slate-700 bg-slate-800 text-white"
-              />
-              <p className="text-xs text-slate-500">
-                Tip: Untuk cetak banyak resi secara masal, pisahkan dengan koma
-                (contoh: JNT123, JNT456).
-                <br />
-                📐 Ukuran label: 5,4cm × 1,4cm | 1 paket = 50 pcs
-              </p>
-            </div>
+            <p className="text-xs text-slate-500">
+              📐 Ukuran label: 5,4cm × 1,4cm | 1 paket = 50 pcs
+            </p>
 
-            {/* Edit Details */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-slate-300 flex items-center gap-2">
-                  <Users className="h-4 w-4" /> Detail Nama (
-                  {editDetails.length})
-                </Label>
+            {/* Edit Resi Groups */}
+            {editGroups.map((group, gi) => (
+              <div
+                key={gi}
+                className="rounded-lg border border-slate-700 bg-slate-800/30 p-4 space-y-3"
+              >
+                <div className="flex items-center gap-3">
+                  <Package className="h-4 w-4 text-purple-400" />
+                  <Input
+                    placeholder="Nomor Resi"
+                    value={group.resiNumber}
+                    onChange={(e) =>
+                      updateResiNumber("edit", gi, e.target.value)
+                    }
+                    className="flex-1 border-slate-700 bg-slate-800 text-white text-sm h-8 placeholder:text-slate-500"
+                  />
+                  {editGroups.length > 1 && (
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      onClick={() => removeResiGroup("edit", gi)}
+                      className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
+                </div>
+
+                {group.details.length === 0 ? (
+                  <p className="text-xs text-slate-500 italic">
+                    Belum ada nama untuk resi ini.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {group.details.map((detail, di) => (
+                      <DetailRowInput
+                        key={di}
+                        detail={detail}
+                        fonts={fonts}
+                        backgrounds={backgrounds}
+                        onChange={(field, val) =>
+                          updateDetailInGroup("edit", gi, di, field, val)
+                        }
+                        onRemove={() => removeDetailFromGroup("edit", gi, di)}
+                      />
+                    ))}
+                  </div>
+                )}
+
                 <div className="flex gap-2">
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={() => {
+                      setBatchGroupIdx(gi);
                       setBatchTargetCreate(false);
                       setBatchImportOpen(true);
                     }}
@@ -1105,35 +1256,23 @@ export function TransaksiClient({
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => addDetailRow("edit")}
+                    onClick={() => addDetailToGroup("edit", gi)}
                     className="border-slate-700 text-slate-300 hover:bg-slate-800 h-7 text-xs"
                   >
-                    <Plus className="mr-1 h-3 w-3" /> Tambah Baris
+                    <Plus className="mr-1 h-3 w-3" /> Tambah Nama
                   </Button>
                 </div>
               </div>
-              {editDetails.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-slate-700 p-4 text-center">
-                  <p className="text-sm text-slate-500">
-                    Belum ada detail nama.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
-                  {editDetails.map((row, idx) => (
-                    <DetailRowInput
-                      key={idx}
-                      idx={idx}
-                      row={row}
-                      fonts={fonts}
-                      backgrounds={backgrounds}
-                      onChange={(i, f, v) => updateDetailRow("edit", i, f, v)}
-                      onRemove={(i) => removeDetailRow("edit", i)}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
+            ))}
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => addResiGroup("edit")}
+              className="w-full border-dashed border-slate-700 text-slate-400 hover:text-white hover:border-slate-600"
+            >
+              <Plus className="mr-2 h-4 w-4" /> Tambah Resi
+            </Button>
           </div>
           <DialogFooter>
             <Button
@@ -1156,7 +1295,111 @@ export function TransaksiClient({
         </DialogContent>
       </Dialog>
 
-      {/* ─── Batch Import Dialog ──────────────────────────────────────────────── */}
+      {/* ─── Generate Dialog ─────────────────────────────────────────── */}
+      <Dialog open={generateDialogOpen} onOpenChange={setGenerateDialogOpen}>
+        <DialogContent className="border-slate-800 bg-slate-900 text-white sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <Wand2 className="h-5 w-5 text-purple-400" /> Generate Label
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {!generateResult ? (
+              <>
+                <div className="rounded-xl border border-slate-800 bg-slate-800/50 p-4 space-y-2">
+                  <p className="text-sm text-slate-300">
+                    <span className="font-medium text-white">Roll:</span>{" "}
+                    {selectedTx?.roll.rollName}
+                  </p>
+                  <p className="text-sm text-slate-300">
+                    <span className="font-medium text-white">Ukuran:</span>{" "}
+                    5,4cm × 1,4cm (fixed)
+                  </p>
+                  <p className="text-sm text-slate-300">
+                    <span className="font-medium text-white">Detail Nama:</span>{" "}
+                    {selectedTx?.numberOfDetails ?? 0} nama
+                  </p>
+                </div>
+                <p className="text-sm text-slate-400">
+                  Sistem akan me-render semua label di roll ini sesuai font &
+                  background, grouping per resi, lalu menghasilkan file PNG
+                  resolusi 300 DPI.
+                </p>
+                <Button
+                  onClick={handleGenerate}
+                  disabled={generateLoading}
+                  className="w-full bg-purple-600 hover:bg-purple-700"
+                >
+                  {generateLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Sedang
+                      Generate...
+                    </>
+                  ) : (
+                    <>
+                      <Wand2 className="mr-2 h-4 w-4" /> Generate Sekarang
+                    </>
+                  )}
+                </Button>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <div className="rounded-xl border border-green-500/30 bg-green-500/10 p-4 space-y-2">
+                  <p className="text-green-400 font-semibold flex items-center gap-2">
+                    ✅ Label Berhasil Di-generate!
+                  </p>
+                  <p className="text-sm text-slate-300">
+                    Total Label:{" "}
+                    <span className="text-white font-medium">
+                      {generateResult.totalLabels}
+                    </span>
+                  </p>
+                  <p className="text-sm text-slate-300">
+                    Total Halaman:{" "}
+                    <span className="text-white font-medium">
+                      {generateResult.totalPages}
+                    </span>
+                  </p>
+                </div>
+                {generateResult.base64 ? (
+                  <Button
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    onClick={() => {
+                      const link = document.createElement("a");
+                      link.href = `data:image/png;base64,${generateResult.base64}`;
+                      link.download = `label_${selectedTx?.rollId?.slice(0, 8) ?? "output"}.png`;
+                      link.click();
+                    }}
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Download PNG
+                  </Button>
+                ) : (
+                  <a
+                    href={generateResult.outputPath}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button className="w-full bg-green-600 hover:bg-green-700">
+                      <Download className="mr-2 h-4 w-4" /> Download PNG
+                    </Button>
+                  </a>
+                )}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setGenerateDialogOpen(false)}
+              className="border-slate-700 text-slate-300 hover:bg-slate-800"
+            >
+              Tutup
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Batch Import Dialog ──────────────────────────────────────── */}
       <Dialog open={batchImportOpen} onOpenChange={setBatchImportOpen}>
         <DialogContent className="border-slate-800 bg-slate-900 text-white sm:max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -1165,7 +1408,6 @@ export function TransaksiClient({
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
-            {/* Excel/CSV Upload */}
             <div className="rounded-xl border border-dashed border-slate-700 bg-slate-800/40 p-4">
               <p className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wider">
                 📂 Upload File Excel / CSV
@@ -1207,7 +1449,6 @@ export function TransaksiClient({
               <div className="flex-1 border-t border-slate-800" />
             </div>
 
-            {/* Manual Text */}
             <div className="space-y-2">
               <Label className="text-slate-300">
                 Daftar Nama{" "}
@@ -1235,9 +1476,7 @@ export function TransaksiClient({
                   onValueChange={(v) => setBatchFontId(v ?? "")}
                 >
                   <SelectTrigger className="border-slate-700 bg-slate-800 text-white">
-                    <SelectValue placeholder="Pilih font...">
-                      {fonts.find((f) => f.id === batchFontId)?.name}
-                    </SelectValue>
+                    <SelectValue placeholder="Pilih font..." />
                   </SelectTrigger>
                   <SelectContent className="border-slate-700 bg-slate-900 text-white">
                     {fonts.map((f) => (
@@ -1287,10 +1526,6 @@ export function TransaksiClient({
                 className="border-slate-700 bg-slate-800 text-white w-32"
               />
             </div>
-            <p className="text-xs text-slate-500">
-              Setelah import, Anda bisa mengubah font/background per nama secara
-              individual di tabel.
-            </p>
           </div>
           <DialogFooter>
             <Button
@@ -1315,7 +1550,7 @@ export function TransaksiClient({
         </DialogContent>
       </Dialog>
 
-      {/* ─── Delete Dialog ──────────────────────────────────────────────────── */}
+      {/* ─── Delete Dialog ───────────────────────────────────────────── */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="border-slate-800 bg-slate-900 text-white sm:max-w-sm">
           <DialogHeader>

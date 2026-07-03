@@ -98,6 +98,57 @@ function ensureFontRegistered(fontFamily: string, filePath: string): string {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+/**
+ * Inject DPI metadata (pHYs chunk) into PNG buffer.
+ * Without this, CorelDRAW defaults to 72 DPI, making width appear huge.
+ * 300 DPI = 11811 pixels per meter.
+ */
+function injectPngDpi(buf: Buffer, dpi: number): Buffer {
+  const ppm = Math.round(dpi / 0.0254); // pixels per meter
+
+  // Locate end of IHDR chunk to insert pHYs after it
+  const sigEnd = 8; // PNG signature
+  const ihdrChunkLen = buf.readUInt32BE(sigEnd);
+  const insertAt = sigEnd + 4 + 4 + ihdrChunkLen + 4; // after IHDR chunk (len + type + data + crc)
+
+  // Build pHYs chunk
+  const pHYsLen = Buffer.alloc(4);
+  pHYsLen.writeUInt32BE(9, 0);
+
+  const pHYsType = Buffer.from("pHYs", "ascii");
+
+  const pHYsData = Buffer.alloc(9);
+  pHYsData.writeUInt32BE(ppm, 0); // X pixels per meter
+  pHYsData.writeUInt32BE(ppm, 4); // Y pixels per meter
+  pHYsData.writeUInt8(1, 8); // unit: meter
+
+  // CRC32 of type + data
+  const crcData = Buffer.concat([pHYsType, pHYsData]);
+  const crc = crc32Buf(crcData);
+  const crcBuf = Buffer.alloc(4);
+  crcBuf.writeUInt32BE(crc, 0);
+
+  const pHYsChunk = Buffer.concat([pHYsLen, pHYsType, pHYsData, crcBuf]);
+
+  // Insert pHYs chunk into PNG buffer
+  return Buffer.concat([
+    buf.subarray(0, insertAt),
+    pHYsChunk,
+    buf.subarray(insertAt),
+  ]);
+}
+
+function crc32Buf(data: Buffer): number {
+  let crc = 0xffffffff;
+  for (let i = 0; i < data.length; i++) {
+    crc ^= data[i];
+    for (let j = 0; j < 8; j++) {
+      crc = (crc >>> 1) ^ (crc & 1 ? 0xedb88320 : 0);
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
 async function loadBackgroundImage(imgPath: string): Promise<Image | null> {
   try {
     const absPath = path.isAbsolute(imgPath)
@@ -324,8 +375,7 @@ export async function generateLabels(
   const canvas = createCanvas(canvasW, canvasH);
   const ctx = canvas.getContext("2d");
 
-  ctx.fillStyle = PAGE_BG_COLOR;
-  ctx.fillRect(0, 0, canvasW, canvasH);
+  // No background fill — keep transparent (Corel-friendly)
 
   const labelGridStartX = BARCODE_WIDTH_PX;
   let currentPacketIndex = 0;
@@ -415,7 +465,11 @@ export async function generateLabels(
   }
 
   const pageFile = "output.png";
-  const buffer = canvas.toBuffer(OUTPUT_FORMAT);
+  let buffer = canvas.toBuffer(OUTPUT_FORMAT);
+
+  // Inject DPI metadata (pHYs chunk) so CorelDRAW reads correct size: 58cm @ 300 DPI
+  buffer = injectPngDpi(buffer, 300);
+
   fs.writeFileSync(path.join(txOutDir, pageFile), buffer);
 
   return {

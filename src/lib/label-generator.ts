@@ -385,40 +385,20 @@ export async function generateLabels(
       const packet = tx.packets[pIdx];
       const pktY = currentPacketIndex * (PAKET_HEIGHT_PX + GAP_ANTAR_PAKET_PX);
 
-      // Draw Resi text on the left area (vertically centered in the packet area)
+      // Draw Resi text — polos, sejajar awal nama cetakan (top-aligned)
       ctx.save();
-
-      // Draw a subtle border around the resi area
-      ctx.strokeStyle = "#cccccc";
-      ctx.lineWidth = 4;
-      ctx.strokeRect(2, pktY + 2, BARCODE_WIDTH_PX - 4, PAKET_HEIGHT_PX - 4);
-
-      // Draw diagonal hatched line pattern to indicate barcode area
-      ctx.strokeStyle = "#e0e0e0";
-      ctx.lineWidth = 2;
-      for (let i = 8; i < BARCODE_WIDTH_PX - 8; i += 20) {
-        ctx.beginPath();
-        ctx.moveTo(i, pktY + 4);
-        ctx.lineTo(
-          Math.min(i + PAKET_HEIGHT_PX, BARCODE_WIDTH_PX - 4),
-          pktY + 4 + Math.min(PAKET_HEIGHT_PX - 8, BARCODE_WIDTH_PX - 4 - i),
-        );
-        ctx.stroke();
-      }
 
       ctx.fillStyle = "#000000";
 
-      // Resi text: reasonable size, not too huge
       const resiFontSize = Math.min(100, Math.round(BARCODE_WIDTH_PX * 0.28));
-
-      // Resi: always use Arial — fixed, clear, readable font
       ctx.font = `bold ${resiFontSize}px Arial, sans-serif`;
 
-      ctx.textBaseline = "middle";
+      ctx.textBaseline = "top";
       ctx.textAlign = "center";
 
+      // Position at top of packet, aligned with first row of labels
       const resiTextX = BARCODE_WIDTH_PX / 2;
-      const resiTextY = pktY + PAKET_HEIGHT_PX / 2;
+      const resiTextY = pktY;
 
       ctx.translate(resiTextX, resiTextY);
       ctx.rotate(-Math.PI / 2);

@@ -80,10 +80,12 @@ function ensureFontRegistered(fontFamily: string, filePath: string): string {
   const absPath = path.isAbsolute(filePath)
     ? filePath
     : path.join(FONTS_DIR, filePath);
-  
+
   // Use a completely safe alphanumeric alias to prevent napi-rs/canvas parsing errors
-  const safeAlias = fontFamily.replace(/[^a-zA-Z0-9]/g, "") + Math.random().toString(36).slice(2, 7);
-  
+  const safeAlias =
+    fontFamily.replace(/[^a-zA-Z0-9]/g, "") +
+    Math.random().toString(36).slice(2, 7);
+
   if (fs.existsSync(absPath)) {
     GlobalFonts.registerFromPath(absPath, safeAlias);
     registeredFonts.set(fontFamily, safeAlias);
@@ -145,7 +147,7 @@ async function drawLabel(
 
   while (fontSize >= minFontPx) {
     ctx.font = `bold ${fontSize}px "${fontFamily}"`;
-    
+
     const words = name.split(" ");
     lines = [];
     let currentLine = words[0];
@@ -164,33 +166,35 @@ async function drawLabel(
 
     const lineHeight = fontSize * 1.2;
     const totalHeight = lines.length * lineHeight;
-    
-    const hasOversizedWord = lines.some(line => ctx.measureText(line).width > maxTextWidth);
+
+    const hasOversizedWord = lines.some(
+      (line) => ctx.measureText(line).width > maxTextWidth,
+    );
 
     if (totalHeight <= labelH * 0.8 && !hasOversizedWord) {
       break;
     }
-    
+
     if (fontSize === minFontPx) {
-        break;
+      break;
     }
     fontSize -= 1;
     if (fontSize < minFontPx) {
-        fontSize = minFontPx;
-        break;
+      fontSize = minFontPx;
+      break;
     }
   }
 
   ctx.font = `bold ${fontSize}px "${fontFamily}"`;
   const lineHeight = fontSize * 1.2;
   const totalTextHeight = lines.length * lineHeight;
-  let startY = (labelH - totalTextHeight) / 2 + (lineHeight / 2);
+  let startY = (labelH - totalTextHeight) / 2 + lineHeight / 2;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
     const m = ctx.measureText(line);
     const textX = (labelW - Math.min(m.width, maxTextWidth)) / 2;
-    ctx.fillText(line, textX, startY + (i * lineHeight), maxTextWidth);
+    ctx.fillText(line, textX, startY + i * lineHeight, maxTextWidth);
   }
 
   ctx.restore();
@@ -218,10 +222,12 @@ export async function generateLabels(
 
   // Pre-register all fonts and cache all backgrounds
   const allDetails = transactions.flatMap((t) => t.details);
-  
+
   for (const d of allDetails) {
     if (d.fontFilePath && d.fontFileBase64) {
-      const absPath = path.isAbsolute(d.fontFilePath) ? d.fontFilePath : path.join(FONTS_DIR, d.fontFilePath);
+      const absPath = path.isAbsolute(d.fontFilePath)
+        ? d.fontFilePath
+        : path.join(FONTS_DIR, d.fontFilePath);
       if (!fs.existsSync(absPath)) {
         fs.mkdirSync(path.dirname(absPath), { recursive: true });
         fs.writeFileSync(absPath, Buffer.from(d.fontFileBase64, "base64"));
@@ -235,10 +241,15 @@ export async function generateLabels(
   const bgCache = new Map<string, Image | null>();
   for (const d of allDetails) {
     if (d.backgroundImagePath && d.backgroundFileBase64) {
-      const absPath = path.isAbsolute(d.backgroundImagePath) ? d.backgroundImagePath : path.join(BACKGROUNDS_DIR, d.backgroundImagePath);
+      const absPath = path.isAbsolute(d.backgroundImagePath)
+        ? d.backgroundImagePath
+        : path.join(BACKGROUNDS_DIR, d.backgroundImagePath);
       if (!fs.existsSync(absPath)) {
         fs.mkdirSync(path.dirname(absPath), { recursive: true });
-        fs.writeFileSync(absPath, Buffer.from(d.backgroundFileBase64, "base64"));
+        fs.writeFileSync(
+          absPath,
+          Buffer.from(d.backgroundFileBase64, "base64"),
+        );
       }
     }
     if (d.backgroundImagePath && !bgCache.has(d.backgroundImagePath)) {
@@ -267,7 +278,13 @@ export async function generateLabels(
           : FALLBACK_LIGHT_BG;
 
       for (let i = 0; i < d.quantity; i++) {
-        queue.push({ name: d.name, fontFamily, fontColor, bgImage, bgFallback });
+        queue.push({
+          name: d.name,
+          fontFamily,
+          fontColor,
+          bgImage,
+          bgFallback,
+        });
       }
     }
 
@@ -280,7 +297,10 @@ export async function generateLabels(
     }
 
     const resiStr = tx.resiNumber?.trim() || "-";
-    const resiList = resiStr.split(/[,;\\n\\t]+/).map(r => r.trim()).filter(r => r.length > 0);
+    const resiList = resiStr
+      .split(/[,;\\n\\t]+/)
+      .map((r) => r.trim())
+      .filter((r) => r.length > 0);
     if (resiList.length === 0) resiList.push("-");
 
     transactionPacks.push({
@@ -317,37 +337,54 @@ export async function generateLabels(
 
       // Draw Resi text on the left area (vertically centered in the packet area)
       ctx.save();
+
+      // Draw a subtle border around the resi area
+      ctx.strokeStyle = "#cccccc";
+      ctx.lineWidth = 4;
+      ctx.strokeRect(2, pktY + 2, BARCODE_WIDTH_PX - 4, PAKET_HEIGHT_PX - 4);
+
+      // Draw diagonal hatched line pattern to indicate barcode area
+      ctx.strokeStyle = "#e0e0e0";
+      ctx.lineWidth = 2;
+      for (let i = 8; i < BARCODE_WIDTH_PX - 8; i += 20) {
+        ctx.beginPath();
+        ctx.moveTo(i, pktY + 4);
+        ctx.lineTo(
+          Math.min(i + PAKET_HEIGHT_PX, BARCODE_WIDTH_PX - 4),
+          pktY + 4 + Math.min(PAKET_HEIGHT_PX - 8, BARCODE_WIDTH_PX - 4 - i),
+        );
+        ctx.stroke();
+      }
+
       ctx.fillStyle = "#000000";
-      
+
       // Resi text: reasonable size, not too huge
-      const resiFontSize = Math.min(75, Math.round(BARCODE_WIDTH_PX * 0.2));
-      
-      // Designer feedback: Resi font should match the label's font!
-      const labelFont = tx.packets[0]?.[0]?.fontFamily || "Arial";
-      ctx.font = `bold ${resiFontSize}px "${labelFont}", Arial, sans-serif`;
-      
+      const resiFontSize = Math.min(100, Math.round(BARCODE_WIDTH_PX * 0.28));
+
+      // Resi: always use Arial — fixed, clear, readable font
+      ctx.font = `bold ${resiFontSize}px Arial, sans-serif`;
+
       ctx.textBaseline = "middle";
       ctx.textAlign = "center";
-      
+
       const resiTextX = BARCODE_WIDTH_PX / 2;
-      const resiTextY = pktY + (PAKET_HEIGHT_PX / 2);
-      
+      const resiTextY = pktY + PAKET_HEIGHT_PX / 2;
+
       ctx.translate(resiTextX, resiTextY);
       ctx.rotate(-Math.PI / 2);
-      
+
       const currentResi = tx.resiList[pIdx % tx.resiList.length];
-      
+
       // Maximum length for the text is the height of the packet
       const maxTextWidth = PAKET_HEIGHT_PX * 0.9;
       const m = ctx.measureText(currentResi);
-      
+
       if (m.width > maxTextWidth) {
-          ctx.fillText(currentResi, 0, 0, maxTextWidth);
+        ctx.fillText(currentResi, 0, 0, maxTextWidth);
       } else {
-          ctx.fillText(currentResi, 0, 0);
+        ctx.fillText(currentResi, 0, 0);
       }
       ctx.restore();
-
 
       for (let row = 0; row < LABELS_PER_PACK; row++) {
         for (let col = 0; col < LABELS_PER_ROW; col++) {
@@ -355,22 +392,22 @@ export async function generateLabels(
           if (cellIdx >= packet.length) break;
 
           const cell = packet[cellIdx];
-        const lx =
-          labelGridStartX + col * (LABEL_WIDTH_PX + SPACING_HORIZONTAL_PX);
-        const ly = pktY + row * (LABEL_HEIGHT_PX + SPACING_VERTICAL_PX);
+          const lx =
+            labelGridStartX + col * (LABEL_WIDTH_PX + SPACING_HORIZONTAL_PX);
+          const ly = pktY + row * (LABEL_HEIGHT_PX + SPACING_VERTICAL_PX);
 
-        await drawLabel(
-          ctx,
-          lx,
-          ly,
-          LABEL_WIDTH_PX,
-          LABEL_HEIGHT_PX,
-          cell.name,
-          cell.fontFamily,
-          cell.fontColor,
-          cell.bgImage,
-          cell.bgFallback,
-        );
+          await drawLabel(
+            ctx,
+            lx,
+            ly,
+            LABEL_WIDTH_PX,
+            LABEL_HEIGHT_PX,
+            cell.name,
+            cell.fontFamily,
+            cell.fontColor,
+            cell.bgImage,
+            cell.bgFallback,
+          );
         }
       }
       currentPacketIndex++;
@@ -383,7 +420,10 @@ export async function generateLabels(
 
   return {
     outputPath: `/output/${rollId}/${pageFile}`,
-    totalLabels: transactionPacks.reduce((sum, tx) => sum + tx.packets.reduce((s, p) => s + p.length, 0), 0),
+    totalLabels: transactionPacks.reduce(
+      (sum, tx) => sum + tx.packets.reduce((s, p) => s + p.length, 0),
+      0,
+    ),
     totalPages: 1,
   };
 }

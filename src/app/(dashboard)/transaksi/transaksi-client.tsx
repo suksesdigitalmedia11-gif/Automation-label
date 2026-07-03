@@ -886,15 +886,6 @@ export function TransaksiClient({
                         <Button
                           variant="ghost"
                           size="icon-xs"
-                          onClick={() => openGenerateDialog(tx)}
-                          className="text-purple-400 hover:text-purple-300 hover:bg-purple-900/20"
-                          title="Generate Label"
-                        >
-                          <Wand2 className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
                           onClick={() => openEditDialog(tx)}
                           className="text-slate-400 hover:text-white hover:bg-slate-800"
                         >

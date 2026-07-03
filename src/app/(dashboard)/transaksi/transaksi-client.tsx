@@ -172,41 +172,34 @@ function DetailRowInput({
         onChange={(e) => onChange(idx, "name", e.target.value)}
         className="flex-1 border-slate-700 bg-slate-800 text-white text-sm h-8 placeholder:text-slate-500"
       />
-      <Select
+      <select
         value={row.fontId}
-        onValueChange={(v) => onChange(idx, "fontId", v ?? "")}
+        onChange={(e) => onChange(idx, "fontId", e.target.value)}
+        className="w-36 border border-slate-700 bg-slate-800 text-white rounded-lg h-8 text-xs px-2 outline-none focus:border-blue-500"
       >
-        <SelectTrigger className="w-36 border-slate-700 bg-slate-800 text-white h-8 text-xs">
-          <SelectValue placeholder="Font...">
-            {fonts.find((f) => f.id === row.fontId)?.name || "Font..."}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent className="border-slate-700 bg-slate-900 text-white max-h-48">
-          {fonts.map((f) => (
-            <SelectItem key={f.id} value={f.id} className="text-xs">
-              {f.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <Select
+        <option value="" className="bg-slate-900">
+          Font...
+        </option>
+        {fonts.map((f) => (
+          <option key={f.id} value={f.id} className="bg-slate-900">
+            {f.name}
+          </option>
+        ))}
+      </select>
+      <select
         value={row.backgroundId}
-        onValueChange={(v) => onChange(idx, "backgroundId", v ?? "")}
+        onChange={(e) => onChange(idx, "backgroundId", e.target.value)}
+        className="w-36 border border-slate-700 bg-slate-800 text-white rounded-lg h-8 text-xs px-2 outline-none focus:border-blue-500"
       >
-        <SelectTrigger className="w-36 border-slate-700 bg-slate-800 text-white h-8 text-xs">
-          <SelectValue placeholder="Background...">
-            {backgrounds.find((b) => b.id === row.backgroundId)?.name ||
-              "Background..."}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent className="border-slate-700 bg-slate-900 text-white max-h-48">
-          {backgrounds.map((b) => (
-            <SelectItem key={b.id} value={b.id} className="text-xs">
-              {b.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        <option value="" className="bg-slate-900">
+          Background...
+        </option>
+        {backgrounds.map((b) => (
+          <option key={b.id} value={b.id} className="bg-slate-900">
+            {b.name}
+          </option>
+        ))}
+      </select>
       <Input
         type="number"
         min={1}

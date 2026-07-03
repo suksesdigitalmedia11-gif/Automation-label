@@ -85,10 +85,12 @@ interface Roll {
   path: string | null;
   status: string;
   createdAt: string;
+  outputCm?: number;
 }
 
 interface Props {
   rolls: Roll[];
+  rollsWithTotal: Roll[];
   currentPage: number;
   totalPages: number;
   totalCount: number;
@@ -98,7 +100,8 @@ interface Props {
 }
 
 export function RollClient({
-  rolls,
+  rolls: _rolls,
+  rollsWithTotal,
   currentPage,
   totalPages,
   totalCount,
@@ -106,6 +109,7 @@ export function RollClient({
   statusFilter: initialStatus,
   userRole,
 }: Props) {
+  const rolls = rollsWithTotal;
   const router = useRouter();
 
   const [search, setSearch] = useState(initialSearch);
@@ -175,17 +179,17 @@ export function RollClient({
   };
 
   const handleCreate = async () => {
-    if (!rollName || !heightCm) {
-      toast.error("Harap isi Nama Roll dan Tinggi");
+    if (!rollName) {
+      toast.error("Harap isi Nama Roll");
       return;
     }
     setFormLoading(true);
     try {
       const result = await createRoll({
         rollName,
-        heightCm: parseFloat(heightCm) || 0,
-        quantity: Math.max(1, parseInt(quantity) || 1),
-        path: rollPath || null,
+        heightCm: 0,
+        quantity: 1,
+        path: null,
       });
       if (result.error) {
         toast.error(result.error);
@@ -413,9 +417,9 @@ export function RollClient({
                       </button>
                     </TableCell>
                     <TableCell className="text-slate-300 font-semibold">
-                      {roll.heightCm} cm × {roll.quantity} roll ={" "}
-                      {(parseFloat(roll.heightCm) * roll.quantity).toFixed(1)}{" "}
-                      cm
+                      {roll.outputCm != null
+                        ? `${roll.outputCm.toFixed(1)} cm`
+                        : `${roll.heightCm} cm × ${roll.quantity} roll = ${(parseFloat(roll.heightCm) * roll.quantity).toFixed(1)} cm`}
                     </TableCell>
                     <TableCell>{statusBadge(roll.status)}</TableCell>
                     <TableCell className="text-slate-400">
@@ -535,35 +539,9 @@ export function RollClient({
                 onChange={(e) => setRollName(e.target.value)}
                 className="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500"
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-slate-300">
-                Tinggi (cm) <span className="text-red-400">*</span>
-              </Label>
-              <Input
-                type="number"
-                min={1}
-                placeholder="100"
-                value={heightCm}
-                onChange={(e) => setHeightCm(e.target.value)}
-                className="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500"
-              />
               <p className="text-xs text-slate-500">
-                Total panjang media roll dalam centimeter
+                Total panjang dihitung otomatis dari transaksi di dalam roll
               </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-slate-300">Jumlah Roll</Label>
-              <Input
-                type="number"
-                min={1}
-                placeholder="1"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                className="border-slate-700 bg-slate-800 text-white placeholder:text-slate-500"
-              />
             </div>
           </div>
           <DialogFooter>
@@ -664,13 +642,11 @@ export function RollClient({
             {selectedRoll && (
               <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4 space-y-2">
                 <p className="text-sm text-slate-300">
-                  <span className="text-slate-500">Panjang:</span>{" "}
+                  <span className="text-slate-500">Total Output:</span>{" "}
                   <span className="text-white font-medium">
-                    {selectedRoll.heightCm} cm × {selectedRoll.quantity} ={" "}
-                    {(
-                      parseFloat(selectedRoll.heightCm) * selectedRoll.quantity
-                    ).toFixed(1)}{" "}
-                    cm
+                    {selectedRoll.outputCm != null
+                      ? `${selectedRoll.outputCm.toFixed(1)} cm`
+                      : `${(parseFloat(selectedRoll.heightCm) * selectedRoll.quantity).toFixed(1)} cm`}
                   </span>
                 </p>
                 <p className="text-sm text-slate-300">

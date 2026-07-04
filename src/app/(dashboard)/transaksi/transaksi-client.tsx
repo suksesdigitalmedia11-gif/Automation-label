@@ -818,7 +818,6 @@ export function TransaksiClient({
                     Total
                   </TableHead>
                   <TableHead className="text-slate-400">Status</TableHead>
-                  <TableHead className="text-slate-400">Output</TableHead>
                   <TableHead className="text-slate-400 text-right">
                     Aksi
                   </TableHead>
@@ -866,21 +865,6 @@ export function TransaksiClient({
                       )}
                     </TableCell>
                     <TableCell>{statusBadge(tx.status)}</TableCell>
-                    <TableCell>
-                      {tx.roll?.path || tx.path ? (
-                        <a
-                          href={(tx.roll?.path || tx.path) as string}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <Badge className="bg-green-500/10 text-green-400 border-green-500/20 text-xs cursor-pointer hover:bg-green-500/20">
-                            <Download className="mr-1 h-3 w-3" /> Unduh
-                          </Badge>
-                        </a>
-                      ) : (
-                        <span className="text-slate-600 text-xs">—</span>
-                      )}
-                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-1">
                         <Button

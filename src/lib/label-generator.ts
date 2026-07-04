@@ -396,9 +396,10 @@ export async function generateLabels(
       ctx.textBaseline = "top";
       ctx.textAlign = "center";
 
-      // Mulai tepat di atas — sejajar dengan tepi atas label pertama
+      // Mulai dengan padding 8px dari atas paket biar gak kepotong
+      const resiPadding = 8;
       const resiTextX = BARCODE_WIDTH_PX / 2;
-      const resiTextY = pktY;
+      const resiTextY = pktY + resiPadding;
 
       ctx.translate(resiTextX, resiTextY);
       ctx.rotate(-Math.PI / 2);

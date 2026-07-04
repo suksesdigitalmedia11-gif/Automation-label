@@ -136,12 +136,17 @@ export function RollClient({
   const [rollDetail, setRollDetail] = useState<{
     transactions: Array<{
       id: string;
-      transactionDate: string;
-      quantity: number | null;
-      numberOfDetails: number | null;
-      resiNumber: string | null;
+      date: string;
+      description: string;
+      resiNumbers: Array<{
+        number: string | null;
+        totalLabels: number;
+        sampleNames: string[];
+        totalNames: number;
+      }>;
       status: string;
     }>;
+    totalOutputCm?: number;
   } | null>(null);
 
   // Create form
@@ -642,13 +647,20 @@ export function RollClient({
             {selectedRoll && (
               <div className="rounded-lg border border-slate-700 bg-slate-800/50 p-4 space-y-2">
                 <p className="text-sm text-slate-300">
-                  <span className="text-slate-500">Total Output:</span>{" "}
+                  <span className="text-slate-500">Nama:</span>{" "}
                   <span className="text-white font-medium">
-                    {selectedRoll.outputCm != null
-                      ? `${selectedRoll.outputCm.toFixed(1)} cm`
-                      : `${(parseFloat(selectedRoll.heightCm) * selectedRoll.quantity).toFixed(1)} cm`}
+                    {selectedRoll.rollName}
                   </span>
                 </p>
+                {rollDetail?.totalOutputCm != null &&
+                  rollDetail.totalOutputCm > 0 && (
+                    <p className="text-sm text-slate-300">
+                      <span className="text-slate-500">Total Output:</span>{" "}
+                      <span className="text-white font-medium">
+                        {rollDetail.totalOutputCm.toFixed(1)} cm
+                      </span>
+                    </p>
+                  )}
                 <p className="text-sm text-slate-300">
                   <span className="text-slate-500">Status:</span>{" "}
                   {statusBadge(selectedRoll.status)}
@@ -669,39 +681,42 @@ export function RollClient({
                   Belum ada transaksi di roll ini.
                 </p>
               ) : (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {rollDetail.transactions.map((tx) => (
                     <div
                       key={tx.id}
-                      className="flex items-center gap-4 rounded-lg border border-slate-700 bg-slate-800/30 p-3"
+                      className="rounded-lg border border-slate-700 bg-slate-800/30 p-3 space-y-2"
                     >
-                      <div className="flex-1">
-                        <p className="text-sm text-white">
-                          {formatDate(tx.transactionDate)}
-                        </p>
-                        <div className="flex items-center gap-2 mt-1">
-                          {tx.resiNumber &&
-                            tx.resiNumber
-                              .split(",")
-                              .filter(Boolean)
-                              .map((r, i) => (
-                                <Badge
-                                  key={i}
-                                  className="bg-purple-500/10 text-purple-400 border-purple-500/20 text-xs"
-                                >
-                                  <Package className="mr-1 h-3 w-3" />
-                                  {r.trim()}
-                                </Badge>
-                              ))}
-                          <Badge
-                            variant="outline"
-                            className="text-xs text-slate-400 border-slate-700"
-                          >
-                            {tx.numberOfDetails ?? 0} nama
-                          </Badge>
-                        </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-white">
+                          {formatDate(tx.date)}
+                        </span>
+                        <span>{statusBadge(tx.status)}</span>
                       </div>
-                      <div>{statusBadge(tx.status)}</div>
+                      {tx.resiNumbers.map((r, i) => (
+                        <div
+                          key={i}
+                          className="flex items-center gap-2 ml-2 border-l-2 border-purple-500/30 pl-3"
+                        >
+                          <Badge className="bg-purple-500/10 text-purple-400 border-purple-500/20 text-xs shrink-0">
+                            <Package className="mr-1 h-3 w-3" />
+                            {r.number || "Tanpa Resi"}
+                          </Badge>
+                          <span className="text-xs text-slate-400">
+                            {r.totalLabels} label • {r.totalNames} nama
+                            {r.sampleNames.length > 0 && (
+                              <>
+                                {" "}
+                                —{" "}
+                                <span className="text-slate-500">
+                                  {r.sampleNames.join(", ")}
+                                  {r.totalNames > 3 ? "…" : ""}
+                                </span>
+                              </>
+                            )}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   ))}
                 </div>

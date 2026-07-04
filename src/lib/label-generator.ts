@@ -385,40 +385,37 @@ export async function generateLabels(
       const packet = tx.packets[pIdx];
       const pktY = currentPacketIndex * (PAKET_HEIGHT_PX + GAP_ANTAR_PAKET_PX);
 
-      // Draw Resi text — polos, sejajar baris pertama label
+      // Draw Resi text — karakter per karakter vertikal (no rotate, no alignment issues)
       ctx.save();
-
-      ctx.fillStyle = "#000000";
 
       const resiFontSize = Math.min(100, Math.round(BARCODE_WIDTH_PX * 0.28));
       ctx.font = `bold ${resiFontSize}px Arial, sans-serif`;
-
+      ctx.fillStyle = "#000000";
       ctx.textBaseline = "top";
       ctx.textAlign = "center";
 
-      // Mulai dengan padding 8px dari atas paket biar gak kepotong
-      const resiPadding = 8;
-      const resiTextX = BARCODE_WIDTH_PX / 2;
-      const resiTextY = pktY + resiPadding;
-
-      ctx.translate(resiTextX, resiTextY);
-      ctx.rotate(-Math.PI / 2);
-
-      // Resi with packet numbering: "RESI-001 1/2", "RESI-001 2/2", etc.
+      // Resi with packet numbering
       const baseResi = tx.resiList[pIdx % tx.resiList.length];
       const totalPackets = tx.packets.length;
-      const currentResi =
+      const resiText =
         totalPackets > 1 ? `${baseResi} ${pIdx + 1}/${totalPackets}` : baseResi;
 
-      // Maximum length for the text is the height of the packet
-      const maxTextWidth = PAKET_HEIGHT_PX * 0.9;
-      const m = ctx.measureText(currentResi);
+      // Write each character on a new line, centered in barcode area
+      const chars = resiText.split("");
+      const charSpacing = resiFontSize * 1.15;
+      const totalTextHeight = chars.length * charSpacing;
 
-      if (m.width > maxTextWidth) {
-        ctx.fillText(currentResi, 0, 0, maxTextWidth);
-      } else {
-        ctx.fillText(currentResi, 0, 0);
+      // Center vertically in the packet area, but start from top if shorter than packet
+      let startY = pktY;
+      if (totalTextHeight < PAKET_HEIGHT_PX) {
+        startY = pktY + (PAKET_HEIGHT_PX - totalTextHeight) / 2;
       }
+
+      const textX = BARCODE_WIDTH_PX / 2;
+      for (let ci = 0; ci < chars.length; ci++) {
+        ctx.fillText(chars[ci], textX, startY + ci * charSpacing);
+      }
+
       ctx.restore();
 
       for (let row = 0; row < LABELS_PER_PACK; row++) {

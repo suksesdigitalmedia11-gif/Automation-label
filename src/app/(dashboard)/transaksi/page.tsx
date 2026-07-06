@@ -30,13 +30,13 @@ export default async function TransaksiPage({ searchParams }: PageProps) {
   if (statusFilter) where.status = statusFilter;
   if (startDate) {
     where.transactionDate = {
-      ...(where.transactionDate as Record<string, unknown> || {}),
+      ...((where.transactionDate as Record<string, unknown>) || {}),
       gte: new Date(startDate),
     };
   }
   if (endDate) {
     where.transactionDate = {
-      ...(where.transactionDate as Record<string, unknown> || {}),
+      ...((where.transactionDate as Record<string, unknown>) || {}),
       lte: new Date(endDate),
     };
   }
@@ -56,6 +56,7 @@ export default async function TransaksiPage({ searchParams }: PageProps) {
               name: true,
               fontId: true,
               backgroundId: true,
+              resiNumber: true,
               quantity: true,
             },
           },

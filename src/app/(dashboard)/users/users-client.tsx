@@ -37,7 +37,7 @@ export function UsersClient({ users }: { users: UserData[] }) {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState("operator");
+  const [role, setRole] = useState<"admin" | "operator">("operator");
 
   const resetForm = () => {
     setName("");
@@ -160,7 +160,7 @@ export function UsersClient({ users }: { users: UserData[] }) {
                       <Button variant="ghost" size="icon-xs" title="Reset Password" onClick={() => { setSelectedUser(u); setPassword(""); setResetOpen(true); }} className="text-yellow-400 hover:text-yellow-300 hover:bg-yellow-900/20">
                         <KeyRound className="h-3.5 w-3.5" />
                       </Button>
-                      <Button variant="ghost" size="icon-xs" title="Edit User" onClick={() => { setSelectedUser(u); setName(u.name); setEmail(u.email); setRole(u.role); setEditOpen(true); }} className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20">
+                      <Button variant="ghost" size="icon-xs" title="Edit User" onClick={() => { setSelectedUser(u); setName(u.name); setEmail(u.email); setRole(u.role as "admin" | "operator"); setEditOpen(true); }} className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20">
                         <Pencil className="h-3.5 w-3.5" />
                       </Button>
                       <Button variant="ghost" size="icon-xs" title="Hapus User" onClick={() => { setSelectedUser(u); setDeleteOpen(true); }} className="text-red-400 hover:text-red-300 hover:bg-red-900/20">
@@ -194,7 +194,7 @@ export function UsersClient({ users }: { users: UserData[] }) {
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">Role</Label>
-              <Select value={role} onValueChange={setRole}>
+              <Select value={role} onValueChange={(v) => setRole(v as "admin" | "operator")}>
                 <SelectTrigger className="border-slate-700 bg-slate-800 text-white"><SelectValue/></SelectTrigger>
                 <SelectContent className="border-slate-700 bg-slate-900 text-white">
                   <SelectItem value="operator">Operator</SelectItem>
@@ -225,7 +225,7 @@ export function UsersClient({ users }: { users: UserData[] }) {
             </div>
             <div className="space-y-2">
               <Label className="text-slate-300">Role</Label>
-              <Select value={role} onValueChange={setRole}>
+              <Select value={role} onValueChange={(v) => setRole(v as "admin" | "operator")}>
                 <SelectTrigger className="border-slate-700 bg-slate-800 text-white"><SelectValue/></SelectTrigger>
                 <SelectContent className="border-slate-700 bg-slate-900 text-white">
                   <SelectItem value="operator">Operator</SelectItem>

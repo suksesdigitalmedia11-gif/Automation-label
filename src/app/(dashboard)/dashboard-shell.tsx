@@ -23,18 +23,10 @@ import {
   LogOut,
   Menu,
   X,
+  Users,
+  History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const sidebarItems = [
-  { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
-  { icon: ScrollText, label: "Roll", href: "/roll" },
-  { icon: ShoppingCart, label: "Transaksi", href: "/transaksi" },
-  { label: "Material", type: "group" as const, children: [
-    { icon: Type, label: "Font", href: "/materials/font" },
-    { icon: ImageIcon, label: "Background", href: "/materials/background" },
-  ]},
-];
 
 export function DashboardShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -42,12 +34,29 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: session } = useSession();
 
-  const user = session?.user;
+  const user = session?.user as any;
+  const isAdmin = user?.role === "admin";
   const initials = user?.name
     ?.split(" ")
-    .map((n) => n[0])
+    .map((n: string) => n[0])
     .join("")
     .toUpperCase() || "U";
+
+  const sidebarItems = [
+    { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
+    { icon: ScrollText, label: "Roll", href: "/roll" },
+    { icon: ShoppingCart, label: "Transaksi", href: "/transaksi" },
+    { label: "Material", type: "group" as const, children: [
+      { icon: Type, label: "Font", href: "/materials/font" },
+      { icon: ImageIcon, label: "Background", href: "/materials/background" },
+    ]},
+    ...(isAdmin ? [
+      { label: "Admin", type: "group" as const, children: [
+        { icon: Users, label: "Manajemen User", href: "/users" },
+        { icon: History, label: "Log Aktivitas", href: "/log" },
+      ]}
+    ] : [])
+  ];
 
   const isActive = (href: string) => pathname === href;
 

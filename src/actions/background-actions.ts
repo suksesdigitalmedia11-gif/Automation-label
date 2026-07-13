@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
 import { requireAuth, safeError } from "@/lib/auth-helpers";
+import { createActivityLog } from "./log-actions";
 
 const createBackgroundSchema = z.object({
   name: z.string().min(1, "Nama background wajib diisi"),
@@ -20,8 +21,9 @@ export type CreateBackgroundInput = z.infer<typeof createBackgroundSchema>;
 export type UpdateBackgroundInput = z.infer<typeof updateBackgroundSchema>;
 
 export async function createBackground(data: CreateBackgroundInput) {
+  let user;
   try {
-    await requireAuth();
+    user = await requireAuth();
   } catch (err) {
     return { error: safeError(err) };
   }
@@ -34,10 +36,27 @@ export async function createBackground(data: CreateBackgroundInput) {
   }
 
   try {
-    await prisma.materialBackground.create({
+    const bg = await prisma.materialBackground.create({
       data: {
         name: parsed.data.name,
         fontColor: parsed.data.fontColor,
+      },
+    });
+
+    await createActivityLog({
+      userId: user.id,
+      userName: user.name,
+      userRole: user.role,
+      action: "TAMBAH_BACKGROUND",
+      entity: "Background",
+      entityId: bg.id,
+      entityLabel: parsed.data.name,
+      detail: {
+        keterangan: `Menambahkan background baru "${parsed.data.name}"`,
+        sesudah: {
+          namaBackground: parsed.data.name,
+          warnaFont: parsed.data.fontColor,
+        },
       },
     });
 
@@ -52,11 +71,14 @@ export async function createBackground(data: CreateBackgroundInput) {
 }
 
 export async function updateBackground(id: string, data: UpdateBackgroundInput) {
+  let user;
   try {
-    await requireAuth();
+    user = await requireAuth();
   } catch (err) {
     return { error: safeError(err) };
   }
+
+  const existing = await prisma.materialBackground.findUnique({ where: { id } });
 
   const parsed = updateBackgroundSchema.safeParse(data);
 
@@ -75,6 +97,27 @@ export async function updateBackground(id: string, data: UpdateBackgroundInput) 
       data: updateData,
     });
 
+    await createActivityLog({
+      userId: user.id,
+      userName: user.name,
+      userRole: user.role,
+      action: "UBAH_BACKGROUND",
+      entity: "Background",
+      entityId: id,
+      entityLabel: parsed.data.name ?? existing?.name ?? "-",
+      detail: {
+        keterangan: `Mengubah background "${existing?.name ?? "-"}"`,
+        sebelum: {
+          namaBackground: existing?.name,
+          warnaFont: existing?.fontColor,
+        },
+        sesudah: {
+          namaBackground: parsed.data.name,
+          warnaFont: parsed.data.fontColor,
+        },
+      },
+    });
+
     revalidatePath("/materials/background");
     return { success: true };
   } catch (err) {
@@ -86,14 +129,35 @@ export async function updateBackground(id: string, data: UpdateBackgroundInput) 
 }
 
 export async function deleteBackground(id: string) {
+  let user;
   try {
-    await requireAuth();
+    user = await requireAuth();
   } catch (err) {
     return { error: safeError(err) };
   }
 
+  const existing = await prisma.materialBackground.findUnique({ where: { id } });
+
   try {
     await prisma.materialBackground.delete({ where: { id } });
+
+    await createActivityLog({
+      userId: user.id,
+      userName: user.name,
+      userRole: user.role,
+      action: "HAPUS_BACKGROUND",
+      entity: "Background",
+      entityId: id,
+      entityLabel: existing?.name ?? "-",
+      detail: {
+        keterangan: `Menghapus background "${existing?.name ?? "-"}"`,
+        sebelum: {
+          namaBackground: existing?.name,
+          warnaFont: existing?.fontColor,
+        },
+      },
+    });
+
     revalidatePath("/materials/background");
     return { success: true };
   } catch (err) {

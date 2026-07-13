@@ -29,6 +29,8 @@ import {
   PAGE_BG_COLOR,
   FALLBACK_DARK_BG,
   FALLBACK_LIGHT_BG,
+  RESI_FONT_NAME,
+  RESI_FONT_FILE,
 } from "./print-spec";
 
 // ─── Constants ──────────────────────────────────────────────────────────────
@@ -272,6 +274,7 @@ export async function generateLabels(
   }
 
   // Pre-register all fonts and cache all backgrounds
+  ensureFontRegistered(RESI_FONT_NAME, RESI_FONT_FILE);
   const allDetails = transactions.flatMap((t) => t.details);
 
   for (const d of allDetails) {
@@ -391,7 +394,7 @@ export async function generateLabels(
       ctx.fillStyle = "#000000";
 
       const resiFontSize = Math.min(100, Math.round(BARCODE_WIDTH_PX * 0.28));
-      ctx.font = `bold ${resiFontSize}px Arial, sans-serif`;
+      ctx.font = `bold ${resiFontSize}px "${registeredFonts.get(RESI_FONT_NAME) || RESI_FONT_NAME}"`;
 
       ctx.textBaseline = "middle";
       ctx.textAlign = "center";

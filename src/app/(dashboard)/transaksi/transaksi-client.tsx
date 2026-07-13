@@ -208,15 +208,35 @@ function DetailRowInput({
           ))}
         </SelectContent>
       </Select>
-      <Input
-        type="number"
-        min={1}
-        max={200}
-        value={detail.quantity}
-        onChange={(e) => onChange("quantity", parseInt(e.target.value) || 1)}
-        className="w-14 border-slate-700 bg-slate-800 text-white text-sm h-8 text-center"
-        title="Jumlah baris label"
-      />
+      <div className="flex items-center gap-0 bg-slate-800 border border-slate-700 rounded h-8 overflow-hidden">
+        <button
+          type="button"
+          onClick={() => onChange("quantity", Math.max(1, detail.quantity - 1))}
+          className="w-6 h-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+        >
+          -
+        </button>
+        <input
+          type="number"
+          min={1}
+          max={999}
+          value={detail.quantity}
+          onFocus={(e) => e.target.select()}
+          onChange={(e) => {
+            const val = parseInt(e.target.value);
+            onChange("quantity", isNaN(val) ? 1 : Math.max(1, val));
+          }}
+          className="w-10 h-full bg-transparent text-white text-xs text-center border-x border-slate-700 outline-none focus:bg-slate-700/50"
+          title="Jumlah baris label"
+        />
+        <button
+          type="button"
+          onClick={() => onChange("quantity", Math.min(999, detail.quantity + 1))}
+          className="w-6 h-full flex items-center justify-center text-slate-400 hover:text-white hover:bg-slate-700 transition-colors"
+        >
+          +
+        </button>
+      </div>
       <Button
         variant="ghost"
         size="icon-xs"
@@ -257,6 +277,7 @@ export function TransaksiClient({
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [batchImportOpen, setBatchImportOpen] = useState(false);
 
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
@@ -627,6 +648,11 @@ export function TransaksiClient({
     setGenerateDialogOpen(true);
   };
 
+  const openPreviewDialog = (tx: Transaction) => {
+    setSelectedTx(tx);
+    setPreviewDialogOpen(true);
+  };
+
   const handleGenerate = async () => {
     if (!selectedTx) return;
     setGenerateLoading(true);
@@ -870,8 +896,27 @@ export function TransaksiClient({
                         <Button
                           variant="ghost"
                           size="icon-xs"
+                          onClick={() => openPreviewDialog(tx)}
+                          className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
+                          title="Preview Label"
+                        >
+                          <FileText className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => openGenerateDialog(tx)}
+                          className="text-purple-400 hover:text-purple-300 hover:bg-purple-900/20"
+                          title="Generate PNG"
+                        >
+                          <Wand2 className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
                           onClick={() => openEditDialog(tx)}
                           className="text-slate-400 hover:text-white hover:bg-slate-800"
+                          title="Edit"
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
@@ -942,12 +987,13 @@ export function TransaksiClient({
       {/* ─── Create Dialog ───────────────────────────────────────────── */}
       <Dialog
         open={createDialogOpen}
-        onOpenChange={(o) => {
-          setCreateDialogOpen(o);
-          if (!o) resetCreateForm();
-        }}
+        onOpenChange={setCreateDialogOpen}
       >
-        <DialogContent className="border-slate-800 bg-slate-900 text-white sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent 
+          className="border-slate-800 bg-slate-900 text-white sm:max-w-3xl max-h-[90vh] overflow-y-auto"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle className="text-white flex items-center gap-2">
               <ShoppingCart className="h-5 w-5 text-blue-400" /> Tambah
@@ -1087,7 +1133,12 @@ export function TransaksiClient({
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setCreateDialogOpen(false)}
+              onClick={() => {
+                if (confirm("Data yang sudah diisi akan hilang. Lanjutkan pembatalan?")) {
+                  setCreateDialogOpen(false);
+                  resetCreateForm();
+                }
+              }}
               className="border-slate-700 text-slate-300 hover:bg-slate-800"
             >
               Batal
@@ -1107,7 +1158,11 @@ export function TransaksiClient({
 
       {/* ─── Edit Dialog ─────────────────────────────────────────────── */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
-        <DialogContent className="border-slate-800 bg-slate-900 text-white sm:max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent 
+          className="border-slate-800 bg-slate-900 text-white sm:max-w-3xl max-h-[90vh] overflow-y-auto"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
           <DialogHeader>
             <DialogTitle className="text-white flex items-center gap-2">
               <Pencil className="h-5 w-5 text-yellow-400" /> Edit Transaksi
@@ -1252,7 +1307,11 @@ export function TransaksiClient({
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => setEditDialogOpen(false)}
+              onClick={() => {
+                if (confirm("Perubahan akan dibatalkan. Lanjutkan?")) {
+                  setEditDialogOpen(false);
+                }
+              }}
               className="border-slate-700 text-slate-300 hover:bg-slate-800"
             >
               Batal
@@ -1369,6 +1428,69 @@ export function TransaksiClient({
               className="border-slate-700 text-slate-300 hover:bg-slate-800"
             >
               Tutup
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── Preview Dialog ────────────────────────────────────────────── */}
+      <Dialog open={previewDialogOpen} onOpenChange={setPreviewDialogOpen}>
+        <DialogContent className="border-slate-800 bg-slate-900 text-white sm:max-w-4xl max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <FileText className="h-5 w-5 text-blue-400" /> Preview Label
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-y-auto space-y-4 py-4 pr-2">
+            <div className="rounded-xl border border-slate-800 bg-slate-800/50 p-4 flex gap-6 text-sm text-slate-300">
+              <div>
+                <span className="font-medium text-white">Roll:</span> {selectedTx?.roll.rollName}
+              </div>
+              <div>
+                <span className="font-medium text-white">Total Detail:</span> {selectedTx?.details?.length ?? 0}
+              </div>
+              <div>
+                <span className="font-medium text-white">Total Qty Cetak:</span> {selectedTx?.details?.reduce((acc, d) => acc + d.quantity, 0) ?? 0}
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {selectedTx?.details?.map((d, i) => {
+                const bg = backgrounds.find(b => b.id === d.backgroundId);
+                const isBrightBg = bg?.name.toLowerCase().includes("putih") || bg?.name.toLowerCase().includes("kuning") || bg?.name.toLowerCase().includes("silver");
+                return (
+                  <div key={i} className="flex gap-4 items-center bg-slate-950 p-3 rounded-lg border border-slate-800">
+                    <div className="w-16 h-16 shrink-0 rounded flex flex-col items-center justify-center text-xs text-center p-1" style={{ backgroundColor: bg?.fontColor === '#FFFFFF' ? '#e11d48' : '#e2e8f0', color: bg?.fontColor || '#000000', border: isBrightBg ? '1px solid #cbd5e1' : 'none' }}>
+                      <span className="font-bold">{d.name}</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-white text-base">{d.name}</p>
+                      <p className="text-xs text-slate-400 mt-1">Resi: <span className="text-slate-300">{d.resiNumber || "-"}</span></p>
+                      <p className="text-xs text-slate-400">BG: <span className="text-slate-300">{bg?.name || "-"}</span></p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <p className="text-sm font-medium text-white">{d.quantity}x</p>
+                      <p className="text-xs text-slate-500">cetak</p>
+                    </div>
+                  </div>
+                );
+              })}
+              {(!selectedTx?.details || selectedTx.details.length === 0) && (
+                <div className="text-center py-10 text-slate-500 italic">
+                  Belum ada data detail untuk dipreview.
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPreviewDialogOpen(false)} className="border-slate-700 text-slate-300 hover:bg-slate-800">
+              Tutup Preview
+            </Button>
+            <Button onClick={() => {
+              setPreviewDialogOpen(false);
+              if (selectedTx) openGenerateDialog(selectedTx);
+            }} className="bg-purple-600 hover:bg-purple-700">
+              <Wand2 className="mr-2 h-4 w-4" /> Lanjut Generate
             </Button>
           </DialogFooter>
         </DialogContent>

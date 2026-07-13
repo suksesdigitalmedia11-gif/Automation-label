@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { requireAuth, safeError } from "@/lib/auth-helpers";
+import { createActivityLog } from "./log-actions";
 
 const detailSchema = z.object({
   name: z.string().min(1, "Nama wajib diisi"),
@@ -26,8 +27,9 @@ export async function saveTransactionDetails(
   transactionId: string,
   details: DetailInput[],
 ) {
+  let user;
   try {
-    await requireAuth();
+    user = await requireAuth();
   } catch (err) {
     return { error: safeError(err) };
   }
@@ -37,6 +39,22 @@ export async function saveTransactionDetails(
     const errors = parsed.error.issues.map((i) => i.message).join(", ");
     return { error: errors };
   }
+
+  // Ambil data detail LAMA sebelum diganti (untuk log before/after)
+  const existingDetails = await prisma.transactionDetail.findMany({
+    where: { transactionId },
+    include: {
+      font: { select: { name: true } },
+      background: { select: { name: true } },
+    },
+    orderBy: { sortOrder: "asc" },
+  });
+
+  // Ambil info transaksi & roll untuk label log
+  const txInfo = await prisma.transaction.findUnique({
+    where: { id: transactionId },
+    include: { roll: { select: { rollName: true } } },
+  });
 
   try {
     // Replace all existing details atomically
@@ -63,6 +81,48 @@ export async function saveTransactionDetails(
       data: { numberOfDetails: parsed.data.details.length },
     });
 
+    // Hitung total qty sesudah
+    const totalQtySesudah = parsed.data.details.reduce((sum, d) => sum + d.quantity, 0);
+    const totalQtySebelum = existingDetails.reduce((sum, d) => sum + d.quantity, 0);
+
+    // Buat detail log per nama untuk transparansi penuh
+    const daftarNamaSesudah = parsed.data.details.map((d) => ({
+      nama: d.name,
+      jumlah: d.quantity,
+      resi: d.resiNumber || "-",
+    }));
+
+    const daftarNamaSebelum = existingDetails.map((d) => ({
+      nama: d.name,
+      jumlah: d.quantity,
+      font: d.font?.name ?? "-",
+      background: d.background?.name ?? "-",
+      resi: d.resiNumber || "-",
+    }));
+
+    await createActivityLog({
+      userId: user.id,
+      userName: user.name,
+      userRole: user.role,
+      action: "SIMPAN_DETAIL_NAMA",
+      entity: "DetailNama",
+      entityId: transactionId,
+      entityLabel: `Detail nama di Roll "${txInfo?.roll.rollName ?? "-"}"`,
+      detail: {
+        keterangan: `Menyimpan ${parsed.data.details.length} nama (total qty: ${totalQtySesudah}) di roll "${txInfo?.roll.rollName ?? "-"}"`,
+        sebelum: {
+          jumlahNama: existingDetails.length,
+          totalQty: totalQtySebelum,
+          daftarNama: daftarNamaSebelum,
+        },
+        sesudah: {
+          jumlahNama: parsed.data.details.length,
+          totalQty: totalQtySesudah,
+          daftarNama: daftarNamaSesudah,
+        },
+      },
+    });
+
     revalidatePath("/transaksi");
     return { success: true };
   } catch (err) {
@@ -78,8 +138,9 @@ export async function importDetailsFromText(
   defaultBackgroundId: string | null,
   defaultQuantity: number,
 ) {
+  let user;
   try {
-    await requireAuth();
+    user = await requireAuth();
   } catch (err) {
     return { error: safeError(err) };
   }
@@ -96,6 +157,11 @@ export async function importDetailsFromText(
   if (names.length === 0) {
     return { error: "Tidak ada nama yang valid ditemukan" };
   }
+
+  const txInfo = await prisma.transaction.findUnique({
+    where: { id: transactionId },
+    include: { roll: { select: { rollName: true } } },
+  });
 
   try {
     await prisma.$transaction([
@@ -115,6 +181,25 @@ export async function importDetailsFromText(
     await prisma.transaction.update({
       where: { id: transactionId },
       data: { numberOfDetails: names.length },
+    });
+
+    await createActivityLog({
+      userId: user.id,
+      userName: user.name,
+      userRole: user.role,
+      action: "SIMPAN_DETAIL_NAMA",
+      entity: "DetailNama",
+      entityId: transactionId,
+      entityLabel: `Import nama di Roll "${txInfo?.roll.rollName ?? "-"}"`,
+      detail: {
+        keterangan: `Import ${names.length} nama (qty masing-masing: ${defaultQuantity}) ke roll "${txInfo?.roll.rollName ?? "-"}"`,
+        sesudah: {
+          jumlahNama: names.length,
+          qtyPerNama: defaultQuantity,
+          totalQty: names.length * defaultQuantity,
+          daftarNama: names.map((n) => ({ nama: n, jumlah: defaultQuantity })),
+        },
+      },
     });
 
     revalidatePath("/transaksi");

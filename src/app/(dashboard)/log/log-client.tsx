@@ -98,7 +98,7 @@ export function LogClient({ logs, users, currentPage, totalPages, totalCount, in
           <div className="flex flex-wrap gap-3">
             <div className="w-48">
               <Label className="text-xs text-slate-400 mb-1 block">User</Label>
-              <Select value={filterUserId || "ALL"} onValueChange={(v) => setFilterUserId(v === "ALL" ? "" : v)}>
+              <Select value={filterUserId || "ALL"} onValueChange={(v) => setFilterUserId(v === "ALL" ? "" : (v || ""))}>
                 <SelectTrigger className="border-slate-700 bg-slate-800 text-white h-8 text-sm">
                   <SelectValue placeholder="Semua User" />
                 </SelectTrigger>
@@ -110,7 +110,7 @@ export function LogClient({ logs, users, currentPage, totalPages, totalCount, in
             </div>
             <div className="w-48">
               <Label className="text-xs text-slate-400 mb-1 block">Aksi</Label>
-              <Select value={filterAction || "ALL"} onValueChange={(v) => setFilterAction(v === "ALL" ? "" : v)}>
+              <Select value={filterAction || "ALL"} onValueChange={(v) => setFilterAction(v === "ALL" ? "" : (v || ""))}>
                 <SelectTrigger className="border-slate-700 bg-slate-800 text-white h-8 text-sm">
                   <SelectValue placeholder="Semua Aksi" />
                 </SelectTrigger>

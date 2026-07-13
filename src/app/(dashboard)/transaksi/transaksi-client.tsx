@@ -987,12 +987,18 @@ export function TransaksiClient({
       {/* ─── Create Dialog ───────────────────────────────────────────── */}
       <Dialog
         open={createDialogOpen}
-        onOpenChange={setCreateDialogOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            if (window.confirm("Batal membuat transaksi? Data yang belum disimpan akan hilang.")) {
+              setCreateDialogOpen(false);
+            }
+          } else {
+            setCreateDialogOpen(true);
+          }
+        }}
       >
         <DialogContent 
           className="border-slate-800 bg-slate-900 text-white sm:max-w-3xl max-h-[90vh] overflow-y-auto"
-          onInteractOutside={(e) => e.preventDefault()}
-          onEscapeKeyDown={(e) => e.preventDefault()}
         >
           <DialogHeader>
             <DialogTitle className="text-white flex items-center gap-2">
@@ -1157,11 +1163,20 @@ export function TransaksiClient({
       </Dialog>
 
       {/* ─── Edit Dialog ─────────────────────────────────────────────── */}
-      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+      <Dialog 
+        open={editDialogOpen} 
+        onOpenChange={(open) => {
+          if (!open) {
+            if (window.confirm("Batal mengedit transaksi? Data yang belum disimpan akan hilang.")) {
+              setEditDialogOpen(false);
+            }
+          } else {
+            setEditDialogOpen(true);
+          }
+        }}
+      >
         <DialogContent 
           className="border-slate-800 bg-slate-900 text-white sm:max-w-3xl max-h-[90vh] overflow-y-auto"
-          onInteractOutside={(e) => e.preventDefault()}
-          onEscapeKeyDown={(e) => e.preventDefault()}
         >
           <DialogHeader>
             <DialogTitle className="text-white flex items-center gap-2">

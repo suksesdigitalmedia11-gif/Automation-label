@@ -104,17 +104,36 @@ export async function updateTransaction(id: string, data: UpdateTransactionInput
     return { error: safeError(err) };
   }
 
-  // Ambil data lama sebelum diubah (untuk log before/after)
+  // Ambil data lama
   const existing = await prisma.transaction.findUnique({
     where: { id },
     include: { roll: { select: { rollName: true } } },
   });
 
-  const parsed = updateTransactionSchema.safeParse(data);
+  if (!existing) return { error: 'Transaksi tidak ditemukan.' };
 
+  const parsed = updateTransactionSchema.safeParse(data);
   if (!parsed.success) {
     const errors = parsed.error.issues.map((i) => i.message).join(", ");
     return { error: errors };
+  }
+
+  // ─── Change Detection ─────────────────────────────────────────────────────
+  // Bandingkan field lama vs baru. Hanya lanjut jika memang ada perubahan.
+  const existingDateStr = existing.transactionDate.toISOString().split("T")[0];
+  const newDateStr = parsed.data.transactionDate
+    ? new Date(parsed.data.transactionDate).toISOString().split("T")[0]
+    : existingDateStr;
+
+  const hasChange =
+    (parsed.data.rollId !== undefined && parsed.data.rollId !== existing.rollId) ||
+    (parsed.data.transactionDate !== undefined && newDateStr !== existingDateStr) ||
+    (parsed.data.status !== undefined && parsed.data.status !== existing.status) ||
+    (parsed.data.resiNumber !== undefined && (parsed.data.resiNumber ?? null) !== existing.resiNumber);
+
+  // Jika tidak ada perubahan apapun → return sukses tanpa DB query dan tanpa log
+  if (!hasChange) {
+    return { success: true, noChange: true };
   }
 
   const updateData: Record<string, unknown> = {};
@@ -133,11 +152,19 @@ export async function updateTransaction(id: string, data: UpdateTransactionInput
   if (parsed.data.path !== undefined) updateData.path = parsed.data.path;
   if (parsed.data.status !== undefined) updateData.status = parsed.data.status;
 
+  // Buat deskripsi perubahan yang mudah dibaca
+  const perubahanList: string[] = [];
+  if (parsed.data.rollId !== undefined && parsed.data.rollId !== existing.rollId)
+    perubahanList.push(`Roll diubah`);
+  if (newDateStr !== existingDateStr)
+    perubahanList.push(`Tanggal: ${existingDateStr} → ${newDateStr}`);
+  if (parsed.data.status !== undefined && parsed.data.status !== existing.status)
+    perubahanList.push(`Status: ${existing.status} → ${parsed.data.status}`);
+  if (parsed.data.resiNumber !== undefined && (parsed.data.resiNumber ?? null) !== existing.resiNumber)
+    perubahanList.push(`Resi: ${existing.resiNumber ?? "-"} → ${parsed.data.resiNumber ?? "-"}`);
+
   try {
-    await prisma.transaction.update({
-      where: { id },
-      data: updateData,
-    });
+    await prisma.transaction.update({ where: { id }, data: updateData });
 
     await createActivityLog({
       userId: user.id,
@@ -146,18 +173,19 @@ export async function updateTransaction(id: string, data: UpdateTransactionInput
       action: "UBAH_TRANSAKSI",
       entity: "Transaksi",
       entityId: id,
-      entityLabel: `Transaksi di Roll "${existing?.roll.rollName ?? "-"}"`,
+      entityLabel: `Transaksi di Roll "${existing.roll.rollName}"`,
       detail: {
-        keterangan: `Mengubah data transaksi di roll "${existing?.roll.rollName ?? "-"}"`,
+        keterangan: `Mengubah transaksi di roll "${existing.roll.rollName}": ${perubahanList.join(", ")}`,
         sebelum: {
-          rollNama: existing?.roll.rollName,
-          nomorResi: existing?.resiNumber ?? "-",
-          status: existing?.status,
-          jumlahDetail: existing?.numberOfDetails,
+          rollNama: existing.roll.rollName,
+          nomorResi: existing.resiNumber ?? "-",
+          status: existing.status,
+          tanggal: existingDateStr,
         },
         sesudah: {
-          nomorResi: parsed.data.resiNumber ?? "-",
-          status: parsed.data.status,
+          nomorResi: parsed.data.resiNumber ?? existing.resiNumber ?? "-",
+          status: parsed.data.status ?? existing.status,
+          tanggal: newDateStr,
         },
       },
     });
@@ -165,12 +193,11 @@ export async function updateTransaction(id: string, data: UpdateTransactionInput
     revalidatePath("/transaksi");
     return { success: true };
   } catch (err) {
-    if (err instanceof Error) {
-      return { error: safeError(err) };
-    }
+    if (err instanceof Error) return { error: safeError(err) };
     return { error: "Gagal mengupdate transaksi" };
   }
 }
+
 
 /**
  * Deletes a transaction and cleans up its associated output directory.

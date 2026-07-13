@@ -280,7 +280,11 @@ export function DashboardClient({
                   {recentRolls.map((roll) => (
                     <TableRow key={roll.id} className="border-slate-800 hover:bg-slate-800/30">
                       <TableCell className="font-medium text-white">{roll.rollName}</TableCell>
-                      <TableCell className="text-slate-300">{parseFloat(roll.heightCm).toFixed(1)} cm</TableCell>
+                      <TableCell className="text-slate-300">
+                        {parseFloat(roll.heightCm) > 0
+                          ? `${parseFloat(roll.heightCm).toFixed(1)} cm`
+                          : <span className="text-slate-600 text-xs">—</span>}
+                      </TableCell>
                       <TableCell className="text-slate-300">{roll.quantity}</TableCell>
                       <TableCell>{statusBadge(roll.status)}</TableCell>
                     </TableRow>

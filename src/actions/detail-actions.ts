@@ -57,6 +57,25 @@ export async function saveTransactionDetails(
   });
 
   try {
+    // ─── Change Detection ──────────────────────────────────────────────────
+    // Bandingkan detail lama vs baru. Jika identik, skip semua operasi DB & log.
+    const isSame =
+      existingDetails.length === parsed.data.details.length &&
+      existingDetails.every((old, idx) => {
+        const n = parsed.data.details[idx];
+        return (
+          old.name === n.name &&
+          old.quantity === n.quantity &&
+          (old.fontId ?? null) === (n.fontId ?? null) &&
+          (old.backgroundId ?? null) === (n.backgroundId ?? null) &&
+          (old.resiNumber ?? null) === (n.resiNumber ?? null)
+        );
+      });
+
+    if (isSame) {
+      return { success: true, noChange: true };
+    }
+
     // Replace all existing details atomically
     await prisma.$transaction([
       prisma.transactionDetail.deleteMany({

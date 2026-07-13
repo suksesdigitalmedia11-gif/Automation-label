@@ -308,6 +308,18 @@ export function TransaksiClient({
     { resiNumber: "", details: [] },
   ]);
 
+  // ─── isDirty tracking ─────────────────────────────────────────────────────
+  // Hanya true jika user benar-benar mengubah sesuatu di form edit.
+  // Digunakan untuk: (1) cek sebelum simpan, (2) konfirmasi batal.
+  const [isEditDirty, setIsEditDirty] = useState(false);
+  // isCreateDirty: true jika user sudah mengisi sesuatu di form buat
+  const [isCreateDirty, setIsCreateDirty] = useState(false);
+  // Snapshot nilai awal saat edit dialog dibuka
+  const [originalEditValues, setOriginalEditValues] = useState<{
+    rollId: string; date: string; status: string; resiNumbers: string;
+    detailsHash: string;
+  } | null>(null);
+
   // Batch import
   const [batchNamesText, setBatchNamesText] = useState("");
   const [batchFontId, setBatchFontId] = useState("");
@@ -358,14 +370,13 @@ export function TransaksiClient({
 
   const addResiGroup = (target: "create" | "edit") => {
     const newGroup = { resiNumber: "", details: [] };
-    if (target === "create") setCreateGroups((prev) => [...prev, newGroup]);
-    else setEditGroups((prev) => [...prev, newGroup]);
+    if (target === "create") { setCreateGroups((prev) => [...prev, newGroup]); setIsCreateDirty(true); }
+    else { setEditGroups((prev) => [...prev, newGroup]); setIsEditDirty(true); }
   };
 
   const removeResiGroup = (target: "create" | "edit", idx: number) => {
-    if (target === "create")
-      setCreateGroups((prev) => prev.filter((_, i) => i !== idx));
-    else setEditGroups((prev) => prev.filter((_, i) => i !== idx));
+    if (target === "create") { setCreateGroups((prev) => prev.filter((_, i) => i !== idx)); setIsCreateDirty(true); }
+    else { setEditGroups((prev) => prev.filter((_, i) => i !== idx)); setIsEditDirty(true); }
   };
 
   const updateResiNumber = (
@@ -377,6 +388,7 @@ export function TransaksiClient({
     setter((prev) =>
       prev.map((g, i) => (i === groupIdx ? { ...g, resiNumber: val } : g)),
     );
+    if (target === "create") setIsCreateDirty(true); else setIsEditDirty(true);
   };
 
   const addDetailToGroup = (target: "create" | "edit", groupIdx: number) => {
@@ -386,6 +398,7 @@ export function TransaksiClient({
         i === groupIdx ? { ...g, details: [...g.details, emptyDetail()] } : g,
       ),
     );
+    if (target === "create") setIsCreateDirty(true); else setIsEditDirty(true);
   };
 
   const updateDetailInGroup = (
@@ -408,6 +421,7 @@ export function TransaksiClient({
           : g,
       ),
     );
+    if (target === "create") setIsCreateDirty(true); else setIsEditDirty(true);
   };
 
   const removeDetailFromGroup = (
@@ -423,6 +437,7 @@ export function TransaksiClient({
           : g,
       ),
     );
+    if (target === "create") setIsCreateDirty(true); else setIsEditDirty(true);
   };
 
   const applyFilters = () => {
@@ -449,7 +464,17 @@ export function TransaksiClient({
     setCreateRollId("");
     setCreateDate(new Date().toISOString().split("T")[0]);
     setCreateGroups([{ resiNumber: "", details: [] }]);
+    setIsCreateDirty(false);
   };
+
+  // Helper: hash groups menjadi string untuk perbandingan cepat
+  const hashGroups = (groups: ResiGroup[]) =>
+    JSON.stringify(
+      groups.map((g) => ({
+        r: g.resiNumber,
+        d: g.details.map((d) => ({ n: d.name, f: d.fontId, b: d.backgroundId, q: d.quantity })),
+      }))
+    );
 
   const flattenGroups = (groups: ResiGroup[]) => {
     return groups.flatMap((g) =>
@@ -527,12 +552,11 @@ export function TransaksiClient({
     setEditRollId(tx.rollId);
     setEditDate(tx.transactionDate.split("T")[0]);
     setEditStatus(tx.status);
+    setIsEditDirty(false); // Reset dirty flag
 
     // Reconstruct groups from flat details
     const groups: ResiGroup[] = [];
     const detailArr = tx.details ?? [];
-    // simple: group by first resiNumber found, or create one group
-    // Since the original data is flat, we reconstruct by finding unique resi numbers
     const seen = new Set<string>();
     for (const d of detailArr) {
       const key =
@@ -562,11 +586,36 @@ export function TransaksiClient({
     if (groups.length === 0) groups.push({ resiNumber: "", details: [] });
 
     setEditGroups(groups);
+
+    // Simpan snapshot nilai awal untuk perbandingan nanti
+    setOriginalEditValues({
+      rollId: tx.rollId,
+      date: tx.transactionDate.split("T")[0],
+      status: tx.status,
+      resiNumbers: tx.resiNumber ?? "",
+      detailsHash: JSON.stringify(
+        detailArr.map((d) => ({
+          n: d.name,
+          f: d.fontId,
+          b: d.backgroundId,
+          q: d.quantity,
+          r: (d as any).resiNumber ?? null,
+        }))
+      ),
+    });
+
     setEditDialogOpen(true);
   };
 
   const handleEdit = async () => {
     if (!selectedTx) return;
+
+    // Jika tidak ada perubahan sama sekali, tutup saja tanpa simpan
+    if (!isEditDirty) {
+      setEditDialogOpen(false);
+      return;
+    }
+
     setFormLoading(true);
     try {
       const allDetails = flattenGroups(editGroups);
@@ -606,8 +655,9 @@ export function TransaksiClient({
         }
       }
 
-      toast.success("Transaksi berhasil diupdate");
+      toast.success("Transaksi berhasil diperbarui!");
       setEditDialogOpen(false);
+      setIsEditDirty(false);
       router.refresh();
     } catch {
       toast.error("Terjadi kesalahan");
@@ -911,21 +961,49 @@ export function TransaksiClient({
                         >
                           <Wand2 className="h-3.5 w-3.5" />
                         </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          onClick={() => openEditDialog(tx)}
-                          className="text-slate-400 hover:text-white hover:bg-slate-800"
-                          title="Edit"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
+                        {/* Tombol Edit — disabled untuk transaksi Completed jika bukan admin */}
+                        {tx.status !== "Completed" ? (
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={() => openEditDialog(tx)}
+                            className="text-slate-400 hover:text-white hover:bg-slate-800"
+                            title="Edit Transaksi"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        ) : userRole === "admin" ? (
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={() => {
+                              if (window.confirm("Transaksi ini sudah SELESAI. Yakin ingin mengubahnya? Pastikan tidak ada kesalahan.")) {
+                                openEditDialog(tx);
+                              }
+                            }}
+                            className="text-yellow-500 hover:text-yellow-400 hover:bg-yellow-900/20"
+                            title="Edit Transaksi Selesai (Admin Only)"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            disabled
+                            className="text-slate-700 cursor-not-allowed"
+                            title="Transaksi sudah selesai, tidak bisa diubah"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                        )}
                         {userRole === "admin" && (
                           <Button
                             variant="ghost"
                             size="icon-xs"
                             onClick={() => openDeleteDialog(tx)}
                             className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                            title="Hapus Transaksi"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </Button>
@@ -989,8 +1067,13 @@ export function TransaksiClient({
         open={createDialogOpen}
         onOpenChange={(open) => {
           if (!open) {
-            if (window.confirm("Batal membuat transaksi? Data yang belum disimpan akan hilang.")) {
+            // Jika user belum mengisi apapun, tutup langsung tanpa konfirmasi
+            if (!isCreateDirty) {
               setCreateDialogOpen(false);
+              resetCreateForm();
+            } else if (window.confirm("Batal membuat transaksi? Data yang belum diisi akan hilang.")) {
+              setCreateDialogOpen(false);
+              resetCreateForm();
             }
           } else {
             setCreateDialogOpen(true);
@@ -1015,7 +1098,7 @@ export function TransaksiClient({
                 </Label>
                 <Select
                   value={createRollId}
-                  onValueChange={(v) => setCreateRollId(v ?? "")}
+                  onValueChange={(v) => { setCreateRollId(v ?? ""); setIsCreateDirty(true); }}
                 >
                   <SelectTrigger className="border-slate-700 bg-slate-800 text-white">
                     <SelectValue placeholder="Pilih Roll...">
@@ -1039,7 +1122,7 @@ export function TransaksiClient({
                 <Input
                   type="date"
                   value={createDate}
-                  onChange={(e) => setCreateDate(e.target.value)}
+                  onChange={(e) => { setCreateDate(e.target.value); setIsCreateDirty(true); }}
                   className="border-slate-700 bg-slate-800 text-white"
                 />
               </div>
@@ -1167,8 +1250,12 @@ export function TransaksiClient({
         open={editDialogOpen} 
         onOpenChange={(open) => {
           if (!open) {
-            if (window.confirm("Batal mengedit transaksi? Data yang belum disimpan akan hilang.")) {
+            // Jika tidak ada perubahan, tutup langsung
+            if (!isEditDirty) {
               setEditDialogOpen(false);
+            } else if (window.confirm("Batal mengedit? Perubahan yang belum disimpan akan hilang.")) {
+              setEditDialogOpen(false);
+              setIsEditDirty(false);
             }
           } else {
             setEditDialogOpen(true);
@@ -1189,7 +1276,7 @@ export function TransaksiClient({
                 <Label className="text-slate-300">Roll</Label>
                 <Select
                   value={editRollId}
-                  onValueChange={(v) => setEditRollId(v ?? "")}
+                  onValueChange={(v) => { setEditRollId(v ?? ""); setIsEditDirty(true); }}
                 >
                   <SelectTrigger className="border-slate-700 bg-slate-800 text-white">
                     <SelectValue />
@@ -1208,7 +1295,7 @@ export function TransaksiClient({
                 <Input
                   type="date"
                   value={editDate}
-                  onChange={(e) => setEditDate(e.target.value)}
+                  onChange={(e) => { setEditDate(e.target.value); setIsEditDirty(true); }}
                   className="border-slate-700 bg-slate-800 text-white"
                 />
               </div>
@@ -1216,7 +1303,7 @@ export function TransaksiClient({
                 <Label className="text-slate-300">Status</Label>
                 <Select
                   value={editStatus}
-                  onValueChange={(v) => setEditStatus(v ?? "Processed")}
+                  onValueChange={(v) => { setEditStatus(v ?? "Processed"); setIsEditDirty(true); }}
                 >
                   <SelectTrigger className="border-slate-700 bg-slate-800 text-white">
                     <SelectValue />

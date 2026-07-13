@@ -87,7 +87,7 @@ export function UsersClient({ users }: { users: UserData[] }) {
       return;
     }
     setLoading(true);
-    const res = await resetUserPassword(selectedUser.id, password);
+    const res = await resetUserPassword(selectedUser.id, { newPassword: password });
     setLoading(false);
     if (res.error) toast.error(res.error);
     else {

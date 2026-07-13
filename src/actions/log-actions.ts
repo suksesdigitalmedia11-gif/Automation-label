@@ -70,7 +70,7 @@ export async function createActivityLog(params: {
         entity: params.entity,
         entityId: params.entityId ?? null,
         entityLabel: params.entityLabel ?? null,
-        detail: params.detail ?? undefined,
+        detail: params.detail ? (params.detail as any) : undefined,
       },
     });
   } catch (err) {

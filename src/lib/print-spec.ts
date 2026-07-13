@@ -97,3 +97,6 @@ export const DEFAULT_PRINT_WIDTH_CM = 5.0;
 
 // ⚠️ PRODUCTION-CRITICAL: tinggi label default dalam cm.
 export const DEFAULT_LABEL_HEIGHT_CM = 1.0;
+
+export const RESI_FONT_NAME = "Montserrat";
+export const RESI_FONT_FILE = "Montserrat-Bold.ttf";

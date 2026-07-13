@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, Shield, User, KeyRound, Loader2, Users } from "lucide-react";
-import { createUser, updateUser, deleteUser, resetPassword } from "@/actions/user-actions";
+import { createUser, updateUser, deleteUser, resetUserPassword } from "@/actions/user-actions";
 
 interface UserData {
   id: string;
@@ -87,7 +87,7 @@ export function UsersClient({ users }: { users: UserData[] }) {
       return;
     }
     setLoading(true);
-    const res = await resetPassword(selectedUser.id, password);
+    const res = await resetUserPassword(selectedUser.id, password);
     setLoading(false);
     if (res.error) toast.error(res.error);
     else {

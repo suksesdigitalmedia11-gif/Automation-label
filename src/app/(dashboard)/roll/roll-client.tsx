@@ -450,16 +450,15 @@ export function RollClient({
                         >
                           <Eye className="h-3.5 w-3.5" />
                         </Button>
-                        {userRole === "admin" && (
-                          <>
-                            <Button
-                              variant="ghost"
-                              size="icon-xs"
-                              onClick={() => openEditDialog(roll)}
-                              className="text-slate-400 hover:text-white hover:bg-slate-800"
-                            >
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
+                        <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            onClick={() => openEditDialog(roll)}
+                            className="text-slate-400 hover:text-white hover:bg-slate-800"
+                          >
+                            <Pencil className="h-3.5 w-3.5" />
+                          </Button>
+                          {userRole === "admin" && (
                             <Button
                               variant="ghost"
                               size="icon-xs"
@@ -468,8 +467,7 @@ export function RollClient({
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
-                          </>
-                        )}
+                          )}
                       </div>
                     </TableCell>
                   </TableRow>

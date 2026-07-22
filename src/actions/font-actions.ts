@@ -4,7 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 
-import { requireAuth, safeError } from "@/lib/auth-helpers";
+import { requireAuth, requireAdmin, safeError } from "@/lib/auth-helpers";
 import { createActivityLog } from "./log-actions";
 
 const createFontSchema = z.object({
@@ -67,8 +67,11 @@ export async function createFont(data: CreateFontInput) {
 export async function deleteFont(id: string) {
   let user;
   try {
-    user = await requireAuth();
+    user = await requireAdmin();
   } catch (err) {
+    if (err instanceof Error && err.message === "Forbidden") {
+      return { error: "Hanya admin yang dapat menghapus font." };
+    }
     return { error: safeError(err) };
   }
 

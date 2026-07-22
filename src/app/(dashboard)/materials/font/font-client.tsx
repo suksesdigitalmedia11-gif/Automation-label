@@ -167,8 +167,7 @@ export function FontClient({ fonts, userRole }: Props) {
             Kelola font untuk label printing
           </p>
         </div>
-        {userRole === "admin" && (
-          <Dialog
+        <Dialog
             open={dialogOpen}
             onOpenChange={(open) => {
               setDialogOpen(open);
@@ -228,7 +227,6 @@ export function FontClient({ fonts, userRole }: Props) {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        )}
       </div>
 
       {/* Font Grid */}
@@ -266,8 +264,7 @@ export function FontClient({ fonts, userRole }: Props) {
                       )}
                     </div>
                   </div>
-                  {userRole === "admin" && (
-                    <div className="flex gap-1">
+                  <div className="flex gap-1">
                       <Button
                         variant="ghost"
                         size="icon-xs"
@@ -277,16 +274,17 @@ export function FontClient({ fonts, userRole }: Props) {
                       >
                         <Upload className="h-3.5 w-3.5" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        onClick={() => openDeleteDialog(font)}
-                        className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </Button>
+                      {userRole === "admin" && (
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => openDeleteDialog(font)}
+                          className="text-red-400 hover:text-red-300 hover:bg-red-900/20"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
-                  )}
                 </div>
               </CardHeader>
               <CardContent>

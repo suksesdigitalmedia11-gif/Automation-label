@@ -358,7 +358,7 @@ export function BackgroundClient({ backgrounds, userRole }: Props) {
                     </div>
                   </div>
                   <div className="flex gap-1">
-                    {userRole === "admin" && (
+                    
                       <Button
                         variant="ghost"
                         size="icon-xs"
@@ -368,7 +368,6 @@ export function BackgroundClient({ backgrounds, userRole }: Props) {
                       >
                         <Upload className="h-3.5 w-3.5" />
                       </Button>
-                    )}
                     <Button
                       variant="ghost"
                       size="icon-xs"

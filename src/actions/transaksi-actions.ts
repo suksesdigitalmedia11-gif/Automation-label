@@ -37,7 +37,7 @@ async function writeAuditLog(params: {
         action,
         entityType: "Transaction",
         entityId,
-        changes: changes ?? undefined,
+        changes: changes ? (changes as any) : undefined,
       },
     });
   } catch (err) {
@@ -312,7 +312,7 @@ export async function deleteTransaction(id: string) {
         rollNama: existing?.roll.rollName,
         nomorResi: existing?.resiNumber ?? "-",
         jumlahNama: existing?.details.length ?? 0,
-        daftarNama: existing?.details.map((d) => `${d.name} (qty: ${d.quantity})`).join(", "),
+        daftarNama: existing?.details.map((d: { name: string; quantity: number }) => `${d.name} (qty: ${d.quantity})`).join(", "),
       },
     },
   });

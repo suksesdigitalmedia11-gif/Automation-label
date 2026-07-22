@@ -961,28 +961,18 @@ export function TransaksiClient({
                         >
                           <Wand2 className="h-3.5 w-3.5" />
                         </Button>
-                        {/* Tombol Edit — disabled untuk transaksi Completed jika bukan admin */}
-                        {tx.status !== "Completed" ? (
-                          <Button
-                            variant="ghost"
-                            size="icon-xs"
-                            onClick={() => openEditDialog(tx)}
-                            className="text-slate-400 hover:text-white hover:bg-slate-800"
-                            title="Edit Transaksi"
-                          >
-                            <Pencil className="h-3.5 w-3.5" />
-                          </Button>
-                        ) : userRole === "admin" ? (
+                        {/* Tombol Edit — bisa diedit semua status, dengan konfirmasi untuk Completed */}
+                        {tx.status === "Completed" ? (
                           <Button
                             variant="ghost"
                             size="icon-xs"
                             onClick={() => {
-                              if (window.confirm("Transaksi ini sudah SELESAI. Yakin ingin mengubahnya? Pastikan tidak ada kesalahan.")) {
+                              if (window.confirm("Transaksi ini sudah SELESAI. Yakin ingin mengubahnya?")) {
                                 openEditDialog(tx);
                               }
                             }}
                             className="text-yellow-500 hover:text-yellow-400 hover:bg-yellow-900/20"
-                            title="Edit Transaksi Selesai (Admin Only)"
+                            title="Edit Transaksi Selesai"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
@@ -990,9 +980,9 @@ export function TransaksiClient({
                           <Button
                             variant="ghost"
                             size="icon-xs"
-                            disabled
-                            className="text-slate-700 cursor-not-allowed"
-                            title="Transaksi sudah selesai, tidak bisa diubah"
+                            onClick={() => openEditDialog(tx)}
+                            className="text-slate-400 hover:text-white hover:bg-slate-800"
+                            title="Edit Transaksi"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>

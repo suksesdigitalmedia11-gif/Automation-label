@@ -11,6 +11,41 @@ import { requireAuth, requireAdmin, safeError } from "@/lib/auth-helpers";
 import { OUTPUT_DIR } from "@/lib/print-spec";
 import { createActivityLog } from "./log-actions";
 
+// ─── Audit helper ──────────────────────────────────────────────────────────
+
+async function writeAuditLog(params: {
+  userId: string;
+  action: "CREATE" | "UPDATE" | "DELETE";
+  entityId: string;
+  changes?: Record<string, unknown>;
+  userName?: string;
+}) {
+  const { userId, action, entityId, changes, userName } = params;
+
+  // Real-time monitoring log untuk admin
+  console.log(
+    `[AUDIT] ${action} | Transaksi: ${entityId} | User: ${userName || userId} | ` +
+    `Role: ${action === "DELETE" ? "admin" : "operator/admin"} | ` +
+    `Timestamp: ${new Date().toISOString()}` +
+    (changes ? ` | Changes: ${JSON.stringify(changes)}` : "")
+  );
+
+  try {
+    await prisma.auditLog.create({
+      data: {
+        userId,
+        action,
+        entityType: "Transaction",
+        entityId,
+        changes: changes ?? undefined,
+      },
+    });
+  } catch (err) {
+    // Non-fatal: audit logging shouldn't block the main operation
+    console.error("[AUDIT] Failed to write audit log:", err);
+  }
+}
+
 const createTransactionSchema = z.object({
   rollId: z.string().min(1, "Roll wajib dipilih"),
   transactionDate: z.string().min(1, "Tanggal wajib diisi"),
@@ -83,6 +118,15 @@ export async function createTransaction(data: CreateTransactionInput) {
       },
     });
 
+    // Audit: CREATE
+    await writeAuditLog({
+      userId: user.id,
+      action: "CREATE",
+      entityId: tx.id,
+      changes: { rollId: parsed.data.rollId, status: parsed.data.status || "Processed" },
+      userName: user.name,
+    });
+
     revalidatePath("/transaksi");
     return { success: true, id: tx.id };
   } catch (err) {
@@ -96,11 +140,8 @@ export async function createTransaction(data: CreateTransactionInput) {
 export async function updateTransaction(id: string, data: UpdateTransactionInput) {
   let user;
   try {
-    user = await requireAdmin();
+    user = await requireAuth();
   } catch (err) {
-    if (err instanceof Error && err.message === 'Forbidden') {
-      return { error: 'Hanya admin yang dapat mengubah transaksi.' };
-    }
     return { error: safeError(err) };
   }
 
@@ -110,7 +151,7 @@ export async function updateTransaction(id: string, data: UpdateTransactionInput
     include: { roll: { select: { rollName: true } } },
   });
 
-  if (!existing) return { error: 'Transaksi tidak ditemukan.' };
+  if (!existing) return { error: "Transaksi tidak ditemukan." };
 
   const parsed = updateTransactionSchema.safeParse(data);
   if (!parsed.success) {
@@ -119,7 +160,6 @@ export async function updateTransaction(id: string, data: UpdateTransactionInput
   }
 
   // ─── Change Detection ─────────────────────────────────────────────────────
-  // Bandingkan field lama vs baru. Hanya lanjut jika memang ada perubahan.
   const existingDateStr = existing.transactionDate.toISOString().split("T")[0];
   const newDateStr = parsed.data.transactionDate
     ? new Date(parsed.data.transactionDate).toISOString().split("T")[0]
@@ -131,7 +171,6 @@ export async function updateTransaction(id: string, data: UpdateTransactionInput
     (parsed.data.status !== undefined && parsed.data.status !== existing.status) ||
     (parsed.data.resiNumber !== undefined && (parsed.data.resiNumber ?? null) !== existing.resiNumber);
 
-  // Jika tidak ada perubahan apapun → return sukses tanpa DB query dan tanpa log
   if (!hasChange) {
     return { success: true, noChange: true };
   }
@@ -151,6 +190,9 @@ export async function updateTransaction(id: string, data: UpdateTransactionInput
   if (parsed.data.resiNumber !== undefined) updateData.resiNumber = parsed.data.resiNumber;
   if (parsed.data.path !== undefined) updateData.path = parsed.data.path;
   if (parsed.data.status !== undefined) updateData.status = parsed.data.status;
+
+  // Always record who edited
+  updateData.updatedBy = user.id;
 
   // Buat deskripsi perubahan yang mudah dibaca
   const perubahanList: string[] = [];
@@ -188,6 +230,21 @@ export async function updateTransaction(id: string, data: UpdateTransactionInput
           tanggal: newDateStr,
         },
       },
+    });
+
+    // Audit: UPDATE — log hanya field yang berubah
+    const changedFields: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(updateData)) {
+      if (key !== "updatedBy") {
+        changedFields[key] = value;
+      }
+    }
+    await writeAuditLog({
+      userId: user.id,
+      action: "UPDATE",
+      entityId: id,
+      changes: changedFields,
+      userName: user.name,
     });
 
     revalidatePath("/transaksi");
@@ -258,6 +315,14 @@ export async function deleteTransaction(id: string) {
         daftarNama: existing?.details.map((d) => `${d.name} (qty: ${d.quantity})`).join(", "),
       },
     },
+  });
+
+  // Audit: DELETE
+  await writeAuditLog({
+    userId: user.id,
+    action: "DELETE",
+    entityId: id,
+    userName: user.name,
   });
 
   // CRE-6: Cleanup orphan output directory for this transaction.

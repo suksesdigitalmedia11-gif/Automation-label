@@ -8,18 +8,20 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(uuid())
-  email         String         @unique
-  password      String
-  name          String
-  role          UserRole       @default(operator)
-  isActive      Boolean        @default(true) @map("is_active")
-  createdAt     DateTime       @default(now()) @map("created_at")
-  updatedAt     DateTime       @updatedAt @map("updated_at")
-  accounts      Account[]
-  sessions      Session[]
-  transactions  Transaction[]
-  activityLogs  ActivityLog[]
+  id                 String        @id @default(uuid())
+  email              String        @unique
+  password           String
+  name               String
+  role               UserRole      @default(operator)
+  isActive           Boolean       @default(true) @map("is_active")
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+  accounts           Account[]
+  sessions           Session[]
+  transactions       Transaction[]
+  editedTransactions Transaction[]  @relation("UpdatedBy")
+  activityLogs       ActivityLog[]
+  auditLogs          AuditLog[]
 
   @@map("users")
 }
@@ -58,25 +60,27 @@ model Roll {
 }
 
 model Transaction {
-  id                 String              @id @default(uuid())
-  rollId             String              @map("roll_id")
-  transactionDate    DateTime            @map("transaction_date") @db.Date
-  quantity           Int?                @default(1)
-  numberOfDetails    Int?                @default(0) @map("number_of_details")
-  printWidth         Decimal?            @map("print_width") @db.Decimal(5, 2)
-  printHeight        Decimal?            @map("print_height") @db.Decimal(5, 2)
-  labelHeight        Decimal?            @map("label_height") @db.Decimal(5, 2)
-  resiNumber         String?             @map("resi_number")
-  labelSizePresetId  String?             @map("label_size_preset_id")
-  path               String?
-  status             RollStatus          @default(Processed)
-  createdBy          String?             @map("created_by")
-  createdAt          DateTime            @default(now()) @map("created_at")
-  updatedAt          DateTime            @updatedAt @map("updated_at")
-  user               User?               @relation(fields: [createdBy], references: [id])
-  roll               Roll                @relation(fields: [rollId], references: [id], onDelete: Cascade)
-  labelSizePreset    LabelSizePreset?    @relation(fields: [labelSizePresetId], references: [id])
-  details            TransactionDetail[]
+  id                String              @id @default(uuid())
+  rollId            String              @map("roll_id")
+  transactionDate   DateTime            @map("transaction_date") @db.Date
+  quantity          Int?                @default(1)
+  numberOfDetails   Int?                @default(0) @map("number_of_details")
+  printWidth        Decimal?            @map("print_width") @db.Decimal(5, 2)
+  printHeight       Decimal?            @map("print_height") @db.Decimal(5, 2)
+  labelHeight       Decimal?            @map("label_height") @db.Decimal(5, 2)
+  resiNumber        String?             @map("resi_number")
+  labelSizePresetId String?             @map("label_size_preset_id")
+  path              String?
+  status            RollStatus          @default(Processed)
+  createdBy         String?             @map("created_by")
+  updatedBy         String?             @map("updated_by")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  updatedAt         DateTime            @updatedAt @map("updated_at")
+  details           TransactionDetail[]
+  user              User?               @relation(fields: [createdBy], references: [id])
+  updatedByUser     User?               @relation("UpdatedBy", fields: [updatedBy], references: [id])
+  labelSizePreset   LabelSizePreset?    @relation(fields: [labelSizePresetId], references: [id])
+  roll              Roll                @relation(fields: [rollId], references: [id], onDelete: Cascade)
 
   @@map("transactions")
 }
@@ -84,16 +88,16 @@ model Transaction {
 model TransactionDetail {
   id            String              @id @default(uuid())
   transactionId String              @map("transaction_id")
-  resiNumber    String?             @map("resi_number")
   name          String
   fontId        String?             @map("font_id")
   backgroundId  String?             @map("background_id")
   quantity      Int                 @default(1)
   sortOrder     Int                 @default(0) @map("sort_order")
   createdAt     DateTime            @default(now()) @map("created_at")
+  resiNumber    String?             @map("resi_number")
+  background    MaterialBackground? @relation(fields: [backgroundId], references: [id])
+  font          MaterialFont?       @relation(fields: [fontId], references: [id])
   transaction   Transaction         @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-  font          MaterialFont?       @relation(fields: [fontId], references: [id], onDelete: SetNull)
-  background    MaterialBackground? @relation(fields: [backgroundId], references: [id], onDelete: SetNull)
 
   @@map("transaction_details")
 }
@@ -103,9 +107,9 @@ model MaterialFont {
   name               String              @unique
   filePath           String?             @map("file_path")
   fontFamily         String?             @map("font_family")
-  fileBase64         String?             @map("file_base64")
   createdAt          DateTime            @default(now()) @map("created_at")
   updatedAt          DateTime            @updatedAt @map("updated_at")
+  fileBase64         String?             @map("file_base64")
   transactionDetails TransactionDetail[]
 
   @@map("materials_fonts")
@@ -116,9 +120,9 @@ model MaterialBackground {
   name               String              @unique
   imagePath          String?             @map("image_path")
   fontColor          String              @default("#FFFFFF") @map("font_color")
-  fileBase64         String?             @map("file_base64")
   createdAt          DateTime            @default(now()) @map("created_at")
   updatedAt          DateTime            @updatedAt @map("updated_at")
+  fileBase64         String?             @map("file_base64")
   transactionDetails TransactionDetail[]
 
   @@map("materials_backgrounds")
@@ -174,6 +178,19 @@ model VerificationToken {
 
   @@unique([identifier, token])
   @@map("verification_tokens")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String   @map("entity_id")
+  changes    Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+  user       User     @relation(fields: [userId], references: [id])
+
+  @@map("audit_logs")
 }
 
 enum UserRole {

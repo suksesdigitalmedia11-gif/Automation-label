@@ -20,11 +20,11 @@ import {
   ShoppingCart,
   Type,
   Image as ImageIcon,
+  Activity,
   LogOut,
   Menu,
   X,
   Users,
-  History,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -34,7 +34,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { data: session } = useSession();
 
-  const user = session?.user as any;
+  const user = session?.user as { id?: string; role?: string; name?: string; email?: string };
   const isAdmin = user?.role === "admin";
   const initials = user?.name
     ?.split(" ")
@@ -53,7 +53,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     ...(isAdmin ? [
       { label: "Admin", type: "group" as const, children: [
         { icon: Users, label: "Manajemen User", href: "/users" },
-        { icon: History, label: "Log Aktivitas", href: "/log" },
+        { icon: Activity, label: "Log Aktivitas", href: "/log-aktivitas" },
       ]}
     ] : [])
   ];
@@ -175,7 +175,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
                 <div className="flex flex-col">
                   <span>{user?.name || "User"}</span>
                   <span className="text-xs font-normal text-slate-400">
-                    {user?.role === "admin" ? "Admin" : "Operator"}
+                    {isAdmin ? "Admin" : "Operator"}
                   </span>
                 </div>
               </div>

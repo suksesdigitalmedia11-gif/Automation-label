@@ -4,7 +4,7 @@ import { NextResponse } from "next/server";
 
 export const { auth } = NextAuth(authConfig);
 
-const adminOnlyPaths = ["/materials", "/log", "/users"];
+const adminOnlyPaths = ["/log", "/log-aktivitas", "/users"];
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;

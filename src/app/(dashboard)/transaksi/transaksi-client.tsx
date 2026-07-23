@@ -53,6 +53,8 @@ import {
   X,
   Users,
   Package,
+  History,
+  Clock,
 } from "lucide-react";
 import {
   createTransaction,
@@ -133,6 +135,8 @@ interface Transaction {
   transactionDate: string;
   createdAt: string;
   roll: Roll;
+  updatedByUser?: { name: string } | null;
+  updatedAt?: string;
   details?: DetailRow[];
 }
 
@@ -149,6 +153,7 @@ interface Props {
   startDate: string;
   endDate: string;
   userRole: string;
+  editLogsByTx: Record<string, { id: string; userId: string; action: string; entityId: string; changes: any; createdAt: string; user: { name: string; role: string } }[]>;
 }
 
 // ─── Detail Row Input ─────────────────────────────────────────────────────
@@ -263,6 +268,7 @@ export function TransaksiClient({
   startDate: initialStartDate,
   endDate: initialEndDate,
   userRole,
+  editLogsByTx,
 }: Props) {
   const router = useRouter();
 
@@ -279,6 +285,8 @@ export function TransaksiClient({
   const [generateDialogOpen, setGenerateDialogOpen] = useState(false);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [batchImportOpen, setBatchImportOpen] = useState(false);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [historyTx, setHistoryTx] = useState<Transaction | null>(null);
 
   const [selectedTx, setSelectedTx] = useState<Transaction | null>(null);
   const [formLoading, setFormLoading] = useState(false);
@@ -894,6 +902,7 @@ export function TransaksiClient({
                     Total
                   </TableHead>
                   <TableHead className="text-slate-400">Status</TableHead>
+                  <TableHead className="text-slate-400 text-center">Riwayat</TableHead>
                   <TableHead className="text-slate-400 text-right">
                     Aksi
                   </TableHead>
@@ -1739,7 +1748,111 @@ export function TransaksiClient({
         </DialogContent>
       </Dialog>
 
-      {/* ─── Delete Dialog ───────────────────────────────────────────── */}
+            {/* ─── History Dialog ─────────────────────────────────────────────── */}
+      <Dialog open={historyDialogOpen} onOpenChange={setHistoryDialogOpen}>
+        <DialogContent className="border-slate-800 bg-slate-900 text-white sm:max-w-lg max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-white flex items-center gap-2">
+              <History className="h-5 w-5 text-amber-400" /> Riwayat Edit Transaksi
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {historyTx && (
+              <>
+                <div className="text-sm text-slate-400">
+                  <span className="text-white font-medium">Roll:</span> {historyTx.roll.rollName}
+                  {" · "}
+                  <span className="text-white font-medium">Tgl:</span> {new Date(historyTx.transactionDate).toLocaleDateString("id-ID")}
+                  {" · "}
+                  <span className="text-white font-medium">Status:</span>{" "}
+                  <Badge variant="outline" className={
+                    historyTx.status === "Completed" ? "bg-green-500/10 text-green-400 border-green-500/20" :
+                    historyTx.status === "Failed" ? "bg-red-500/10 text-red-400 border-red-500/20" :
+                    "bg-blue-500/10 text-blue-400 border-blue-500/20"
+                  }>
+                    {historyTx.status === "Completed" ? "Selesai" : historyTx.status === "Failed" ? "Gagal" : "Diproses"}
+                  </Badge>
+                </div>
+
+                {(() => {
+                  const logs = editLogsByTx[historyTx.id];
+                  if (!logs || logs.length === 0) {
+                    return (
+                      <div className="flex flex-col items-center justify-center py-8 text-slate-500">
+                        <Clock className="h-10 w-10 mb-2" />
+                        <p className="text-sm">Transaksi ini belum pernah diedit</p>
+                        <p className="text-xs text-slate-600 mt-1">Semua data masih original sejak dibuat</p>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div className="space-y-3">
+                      <p className="text-xs text-slate-400">
+                        Total <span className="text-amber-400 font-medium">{logs.length}x</span> diedit
+                      </p>
+                      {logs.map((log: any, i: number) => {
+                        const changes = log.changes || {};
+                        const fieldLabels: Record<string, string> = {
+                          rollId: "Roll", transactionDate: "Tanggal", quantity: "Qty",
+                          numberOfDetails: "Jml Detail", printWidth: "Lebar Print",
+                          printHeight: "Tinggi Print", labelHeight: "Tinggi Label",
+                          resiNumber: "No Resi", path: "Path", status: "Status",
+                        };
+                        const statusLabels: Record<string, string> = {
+                          Processed: "Diproses", Completed: "Selesai", Failed: "Gagal",
+                        };
+                        return (
+                          <div key={log.id} className="rounded-lg border border-slate-800 bg-slate-800/30 p-3">
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <div className="h-6 w-6 rounded-full bg-amber-500/20 flex items-center justify-center text-[10px] font-medium text-amber-400">
+                                  {i + 1}
+                                </div>
+                                <span className="text-sm text-white font-medium">{log.user?.name || "Unknown"}</span>
+                                <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-amber-500/30 text-amber-400">
+                                  Edit
+                                </Badge>
+                              </div>
+                              <span className="text-xs text-slate-500">
+                                {new Date(log.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "short" })}
+                                {" "}
+                                {new Date(log.createdAt).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                            </div>
+                            <div className="space-y-1">
+                              {Object.entries(changes).map(([key, value]) => {
+                                const label = fieldLabels[key] || key;
+                                let displayValue = String(value ?? "-");
+                                if (key === "status" && statusLabels[String(value)]) {
+                                  displayValue = statusLabels[String(value)];
+                                }
+                                if (key === "transactionDate" && value) {
+                                  displayValue = new Date(String(value)).toLocaleDateString("id-ID");
+                                }
+                                return (
+                                  <div key={key} className="flex items-center justify-between text-xs py-0.5">
+                                    <span className="text-slate-400">{label}</span>
+                                    <span className="text-white font-medium">{displayValue}</span>
+                                  </div>
+                                );
+                              })}
+                              {Object.keys(changes).length === 0 && (
+                                <p className="text-xs text-slate-600">Tidak ada detail perubahan tersimpan</p>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+{/* ─── Delete Dialog ───────────────────────────────────────────── */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="border-slate-800 bg-slate-900 text-white sm:max-w-sm">
           <DialogHeader>

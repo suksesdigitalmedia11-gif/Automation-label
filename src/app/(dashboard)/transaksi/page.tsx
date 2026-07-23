@@ -50,6 +50,7 @@ export default async function TransaksiPage({ searchParams }: PageProps) {
         take: limit,
         include: {
           roll: true,
+          updatedByUser: { select: { name: true } },
           details: {
             orderBy: { sortOrder: "asc" },
             select: {
@@ -77,6 +78,29 @@ export default async function TransaksiPage({ searchParams }: PageProps) {
       }),
     ]);
 
+  // Fetch edit history (audit logs) for all displayed transactions
+  const txIds = transactions.map((tx: { id: string }) => tx.id);
+  const editLogs =
+    txIds.length > 0
+      ? await prisma.auditLog.findMany({
+          where: {
+            entityId: { in: txIds },
+            action: "UPDATE",
+          },
+          orderBy: { createdAt: "desc" },
+          include: {
+            user: { select: { name: true, role: true } },
+          },
+        })
+      : [];
+
+  // Group logs by transaction ID
+  const editLogsByTx: Record<string, typeof editLogs> = {};
+  for (const log of editLogs) {
+    if (!editLogsByTx[log.entityId]) editLogsByTx[log.entityId] = [];
+    editLogsByTx[log.entityId].push(log);
+  }
+
   const totalPages = Math.ceil(totalCount / limit);
 
   return (
@@ -93,6 +117,7 @@ export default async function TransaksiPage({ searchParams }: PageProps) {
       startDate={startDate}
       endDate={endDate}
       userRole={session?.user?.role || "operator"}
+      editLogsByTx={JSON.parse(JSON.stringify(editLogsByTx))}
     />
   );
 }

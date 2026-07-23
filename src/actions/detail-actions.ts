@@ -40,6 +40,23 @@ export async function saveTransactionDetails(
     return { error: errors };
   }
 
+  // ─── Duplicate Name Detection ──────────────────────────────────────────
+  const nameCounts = new Map<string, string[]>();
+  for (const d of parsed.data.details) {
+    const key = d.name.toLowerCase().trim();
+    if (!nameCounts.has(key)) nameCounts.set(key, []);
+    nameCounts.get(key)!.push(d.name);
+  }
+  const duplicates: string[] = [];
+  for (const [, names] of nameCounts) {
+    if (names.length > 1) {
+      duplicates.push("\"" + names.join("\" = \"") + "\" (" + names.length + "x)");
+    }
+  }
+  const warning = duplicates.length > 0
+    ? "⚠️ Terdeteksi " + duplicates.length + " nama duplikat: " + duplicates.join(", ") + ". Pastikan ini disengaja."
+    : undefined;
+
   // Ambil data detail LAMA sebelum diganti (untuk log before/after)
   const existingDetails = await prisma.transactionDetail.findMany({
     where: { transactionId },
@@ -58,10 +75,9 @@ export async function saveTransactionDetails(
 
   try {
     // ─── Change Detection ──────────────────────────────────────────────────
-    // Bandingkan detail lama vs baru. Jika identik, skip semua operasi DB & log.
     const isSame =
       existingDetails.length === parsed.data.details.length &&
-      existingDetails.every((old, idx) => {
+      existingDetails.every((old: { name: string; quantity: number; fontId: string | null; backgroundId: string | null; resiNumber: string | null }, idx: number) => {
         const n = parsed.data.details[idx];
         return (
           old.name === n.name &&
@@ -73,7 +89,7 @@ export async function saveTransactionDetails(
       });
 
     if (isSame) {
-      return { success: true, noChange: true };
+      return { success: true, noChange: true, warning };
     }
 
     // Replace all existing details atomically
@@ -101,17 +117,17 @@ export async function saveTransactionDetails(
     });
 
     // Hitung total qty sesudah
-    const totalQtySesudah = parsed.data.details.reduce((sum, d) => sum + d.quantity, 0);
-    const totalQtySebelum = existingDetails.reduce((sum, d) => sum + d.quantity, 0);
+    const totalQtySesudah = parsed.data.details.reduce((sum: number, d: { quantity: number }) => sum + d.quantity, 0);
+    const totalQtySebelum = existingDetails.reduce((sum: number, d: { quantity: number }) => sum + d.quantity, 0);
 
     // Buat detail log per nama untuk transparansi penuh
-    const daftarNamaSesudah = parsed.data.details.map((d) => ({
+    const daftarNamaSesudah = parsed.data.details.map((d: { name: string; quantity: number; resiNumber?: string | null }) => ({
       nama: d.name,
       jumlah: d.quantity,
       resi: d.resiNumber || "-",
     }));
 
-    const daftarNamaSebelum = existingDetails.map((d) => ({
+    const daftarNamaSebelum = existingDetails.map((d: { name: string; quantity: number; font?: { name: string } | null; background?: { name: string } | null; resiNumber?: string | null }) => ({
       nama: d.name,
       jumlah: d.quantity,
       font: d.font?.name ?? "-",
@@ -126,9 +142,9 @@ export async function saveTransactionDetails(
       action: "SIMPAN_DETAIL_NAMA",
       entity: "DetailNama",
       entityId: transactionId,
-      entityLabel: `Detail nama di Roll "${txInfo?.roll.rollName ?? "-"}"`,
+      entityLabel: "Detail nama di Roll \"" + (txInfo?.roll.rollName ?? "-") + "\"",
       detail: {
-        keterangan: `Menyimpan ${parsed.data.details.length} nama (total qty: ${totalQtySesudah}) di roll "${txInfo?.roll.rollName ?? "-"}"`,
+        keterangan: "Menyimpan " + parsed.data.details.length + " nama (total qty: " + totalQtySesudah + ") di roll \"" + (txInfo?.roll.rollName ?? "-") + "\"",
         sebelum: {
           jumlahNama: existingDetails.length,
           totalQty: totalQtySebelum,
@@ -143,7 +159,7 @@ export async function saveTransactionDetails(
     });
 
     revalidatePath("/transaksi");
-    return { success: true };
+    return { success: true, warning };
   } catch (err) {
     return { error: safeError(err) };
   }
@@ -177,6 +193,21 @@ export async function importDetailsFromText(
     return { error: "Tidak ada nama yang valid ditemukan" };
   }
 
+  // Duplicate detection for imports too
+  const nameCounts = new Map<string, string[]>();
+  for (const n of names) {
+    const key = n.toLowerCase().trim();
+    if (!nameCounts.has(key)) nameCounts.set(key, []);
+    nameCounts.get(key)!.push(n);
+  }
+  const duplicates: string[] = [];
+  for (const [, vals] of nameCounts) {
+    if (vals.length > 1) duplicates.push("\"" + vals.join("\" = \"") + "\"");
+  }
+  const importWarning = duplicates.length > 0
+    ? "⚠️ Nama duplikat dalam import: " + duplicates.join(", ")
+    : undefined;
+
   const txInfo = await prisma.transaction.findUnique({
     where: { id: transactionId },
     include: { roll: { select: { rollName: true } } },
@@ -209,9 +240,9 @@ export async function importDetailsFromText(
       action: "SIMPAN_DETAIL_NAMA",
       entity: "DetailNama",
       entityId: transactionId,
-      entityLabel: `Import nama di Roll "${txInfo?.roll.rollName ?? "-"}"`,
+      entityLabel: "Import nama di Roll \"" + (txInfo?.roll.rollName ?? "-") + "\"",
       detail: {
-        keterangan: `Import ${names.length} nama (qty masing-masing: ${defaultQuantity}) ke roll "${txInfo?.roll.rollName ?? "-"}"`,
+        keterangan: "Import " + names.length + " nama (qty masing-masing: " + defaultQuantity + ") ke roll \"" + (txInfo?.roll.rollName ?? "-") + "\"",
         sesudah: {
           jumlahNama: names.length,
           qtyPerNama: defaultQuantity,
@@ -222,7 +253,7 @@ export async function importDetailsFromText(
     });
 
     revalidatePath("/transaksi");
-    return { success: true, count: names.length };
+    return { success: true, count: names.length, warning: importWarning };
   } catch (err) {
     return { error: safeError(err) };
   }

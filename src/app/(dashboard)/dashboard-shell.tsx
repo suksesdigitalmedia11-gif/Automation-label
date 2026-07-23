@@ -53,7 +53,7 @@ export function DashboardShell({ children }: { children: React.ReactNode }) {
     ...(isAdmin ? [
       { label: "Admin", type: "group" as const, children: [
         { icon: Users, label: "Manajemen User", href: "/users" },
-        { icon: Activity, label: "Log Aktivitas", href: "/log-aktivitas" },
+        { icon: Activity, label: "Log Aktivitas", href: "/log" },
       ]}
     ] : [])
   ];

@@ -545,6 +545,7 @@ export function TransaksiClient({
       }
 
       toast.success("Transaksi berhasil dibuat!");
+      if (detailResult.warning) toast.warning(detailResult.warning, { duration: 8000 });
       setCreateDialogOpen(false);
       resetCreateForm();
       router.refresh();
@@ -661,6 +662,7 @@ export function TransaksiClient({
           toast.error(detailResult.error);
           return;
         }
+        if (detailResult.warning) toast.warning(detailResult.warning, { duration: 8000 });
       }
 
       toast.success("Transaksi berhasil diperbarui!");
